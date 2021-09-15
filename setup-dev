@@ -1,0 +1,52 @@
+#!/bin/bash -e
+## exit on non-zero status
+set -e
+
+## info
+VERSION=1.1
+MANUFACT="(c) 2021 ATOS IT Solutions and Services GmbH"
+AUTHORS="Thomas Perschak"
+
+## defaults
+SCRIPTDIR=$(cd $(dirname $0); pwd)
+CBOLD="\033[1m"
+CEND="\e[0m"
+
+## helper functions
+##
+function printHelp {
+    echo "Install development environment."
+    echo "$MANUFACT, $AUTHORS"
+    echo "Script version: $VERSION"
+    echo ""
+    echo "Syntax:"
+    echo " setupdev [<options>]"
+    echo "Options (optional):"
+    echo " -help: Print this help text."
+}
+##
+## helper functions
+
+## read command line parameters
+INDEX=1
+while [ $INDEX -le $# ]; do
+    case ${!INDEX} in
+        "-help")
+            printHelp
+            exit 1
+            ;;
+        *)
+            echo "Unknown parameter '${!INDEX}', type -help for more information." >&2; exit 1
+            ;;
+    esac
+    let INDEX+=1
+done
+
+## restart script as sudo user
+if [[ $UID -ne 0 ]]; then
+    pkexec $(readlink -f $0) "$@"
+    exit $?
+fi
+
+## install development tools
+apt-get install libxt-dev libx11-dev libxft-dev gcc postgresql-server-dev-all libcairo2-dev libxcursor-dev libfftw3-dev

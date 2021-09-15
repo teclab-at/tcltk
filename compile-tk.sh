@@ -45,23 +45,6 @@ if [ ! -d $COMPILEDIR/$MODULE ] || [ -n "$SW_FORCECOPY" ] ; then
     fi
 fi
 
-## check if mandatory packages are installed
-if [ -z "$WINDIR" ]; then
-    if [ -f /etc/debian_version ]; then
-        for PACKAGE in libxt-dev libx11-dev libxft-dev; do
-            set +e; dpkg -s $PACKAGE 2>&1 | grep -q "Status:"; S=$?; set -e
-            if [ $S -eq 1 ]; then echo "Missing mandatory package '$PACKAGE'." >&2; exit 1; fi
-        done
-    elif [ -f /etc/SuSE-release ]; then
-        for PACKAGE in libxt-devel libx11-dev libxft-dev; do
-            zypper se $PACKAGE > /dev/null | true
-            if [ ${PIPESTATUS[0]} -gt 0 ]; then echo "Missing mandatory package '$PACKAGE'." >&2; exit 1; fi
-        done
-    else
-        echo "Unknown distribution." >&2; exit 1
-    fi
-fi
-
 ## change to compile dir
 if [ -z "$WINDIR" ]; then
     cd $COMPILEDIR/$MODULE/unix

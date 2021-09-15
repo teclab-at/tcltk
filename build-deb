@@ -179,29 +179,27 @@ if [ -z "$NOBRANCHNAME" ]; then DEBFILE=$DEBFILE.$GITBRANCH; fi
 DEBFILE=$DEBFILE.$BUILDOSFILE.$BUILDMACHINE
 if [ -n "$TITLE" ]; then DEBFILE=$DEBFILE.$TITLE; fi
 INSTDIR=/opt/$DEBNAME
-RELDIR=$(mktemp -d)
 
 ## done collecting build infos
 echo done
            
 ## update the changelog file
 if [ -n "$CHANGELOG" ]; then
-$SCRIPTDIR/../gse4-service/git-changelog -indir $SCRIPTDIR
-## make a local copy
-mkdir -p $SCRIPTDIR/share/changelog
-cp $SCRIPTDIR/debian.template/changelog $SCRIPTDIR/share/changelog/${DEBNAME}.changelog
+    $SCRIPTDIR/../gse4-service/git-changelog -indir $SCRIPTDIR
+    ## make a local copy
+    mkdir -p $SCRIPTDIR/share/changelog
+    cp $SCRIPTDIR/debian.template/changelog $SCRIPTDIR/share/changelog/${DEBNAME}.changelog
 fi
 
 ## create release directory
 echo -n "Build up release folder ... "
-rm -fr $RELDIR
-mkdir -p $RELDIR
-mkdir -p $RELDIR$INSTDIR
-rsync -a $SCRIPTDIR/$BINDIR/* $RELDIR$INSTDIR
+RELDIR=$(mktemp -d)
+mkdir -p $RELDIR/$INSTDIR
+rsync -a $SCRIPTDIR/$BINDIR/* $RELDIR/$INSTDIR
 mkdir -p $RELDIR/usr/share; mkdir -p $RELDIR/usr/share/pixmaps; mkdir -p $RELDIR/usr/share/applications
-cp -f $RELDIR$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/tkcon85.png
-cp -f $RELDIR$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/wish85.png
-cp -f $RELDIR$INSTDIR/share/config/tkcon85.desktop.template $RELDIR/usr/share/applications/tkcon85.desktop
+cp -f $RELDIR/$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/tkcon85.png
+cp -f $RELDIR/$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/wish85.png
+cp -f $RELDIR/$INSTDIR/share/config/tkcon85.desktop.template $RELDIR/usr/share/applications/tkcon85.desktop
 sed -i "s|%installdir%|$INSTDIR|g" $RELDIR/usr/share/applications/tkcon85.desktop
 echo -n "debian folder ... "
 mkdir -p $RELDIR/DEBIAN
@@ -220,7 +218,7 @@ done
 (
     cd $RELDIR
     find ./ -name "*~" | xargs rm -f
-    cd $RELDIR$INSTDIR
+    cd $RELDIR/$INSTDIR
     rm -f  ./build-deb
     rm -f  ./build-doxy.sh
     rm -f  ./setgit
@@ -234,14 +232,16 @@ echo done
 ## plattform specific
 if [ -z "$WINDIR" ]; then
     ## execute build
+    mkdir -p $OUTDIR
     $SCRIPTDIR/../gse4-service/build-deb -indir $RELDIR -outdir $OUTDIR -file $DEBFILE $FOPTIONS
 else
     ## name folder to release version
-    mv -f $RELDIR$INSTDIR $RELDIR$INSTDIR/../$DEBFILE | true
+    mv -f $RELDIR/$INSTDIR $RELDIR/$INSTDIR/../$DEBFILE | true
     
     ## compress to tgz file
     echo -n "Compressing $(realpath --relative-to=$SCRIPTDIR $DEBFILE.tgz) ... "
-    tar -czf $OUTDIR/$DEBFILE.tgz -C $(readlink -m $RELDIR$INSTDIR/../$DEBFILE/..) $DEBFILE | true
+    mkdir -p $OUTDIR
+    tar -czf $OUTDIR/$DEBFILE.tgz -C $(readlink -m $RELDIR/$INSTDIR/../$DEBFILE/..) $DEBFILE | true
     echo done
 fi
 
