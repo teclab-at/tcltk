@@ -8,7 +8,7 @@ MANUFACT="(c) 2021 ATOS"
 AUTHORS="Thomas Perschak"
 
 ## defaults
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 OUTDIR=$(readlink -m $SCRIPTDIR/../debian)
 
 ## helper functions
