@@ -8,7 +8,7 @@ MANUFACT="(c) 2018 ATOS"
 AUTHORS="Thomas Perschak"
 
 ## defaults
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 
 ## helper functions
 ##

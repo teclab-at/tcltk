@@ -8,7 +8,7 @@ MANUFACT="(c) 2021 ATOS IT Solutions and Services GmbH"
 AUTHORS="Thomas Perschak"
 
 ## defaults
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 CBOLD="\033[1m"
 CEND="\e[0m"
 

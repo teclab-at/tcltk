@@ -26,7 +26,7 @@ function printHelp {
 ## helper functions
 
 ## switch into script directory
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 cd $SCRIPTDIR
 
 ## forward options
