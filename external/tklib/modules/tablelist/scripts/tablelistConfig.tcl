@@ -375,7 +375,7 @@ proc tablelist::extendConfigSpecs {} {
 	($::tcl_platform(osVersion) >= 10.0 ||
 	 ($::tcl_platform(osVersion) >= 6.0 &&
 	  [string compare [winfo rgb . SystemHighlight] \
-			  "13107 39321 65535"] == 0))} {	;# Win 7/8 Aero
+			  "13107 39321 65535"] == 0))} {  ;# Win 10 or 7/8 Aero
 	set centerArrows 1
     }
 }
@@ -1041,6 +1041,10 @@ proc tablelist::doConfig {win opt val} {
 			configLabel $data(cornerLbl) $opt $val
 			for {set col 0} {$col < $data(colCount)} {incr col} {
 			    configLabel $data(hdrTxtFrmLbl)$col $opt $val
+			    set w [labelwindowpathSubCmd $win $col]
+			    if {[winfo exists $w]} {
+				$w configure $opt $val
+			    }
 			}
 		    }
 		    if {$data(editRow) >= 0} {

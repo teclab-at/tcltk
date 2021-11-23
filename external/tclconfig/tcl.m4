@@ -2353,7 +2353,8 @@ AC_DEFUN([TEA_TIME_HANDLER], [
     # (like convex) have timezone functions, etc.
     #
     AC_CACHE_CHECK([long timezone variable], tcl_cv_timezone_long, [
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>]],
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>
+#include <stdlib.h>]],
 	[[extern long timezone;
 	    timezone += 1;
 	    exit (0);]])],
@@ -2365,7 +2366,8 @@ AC_DEFUN([TEA_TIME_HANDLER], [
 	# On some systems (eg IRIX 6.2), timezone is a time_t and not a long.
 	#
 	AC_CACHE_CHECK([time_t timezone variable], tcl_cv_timezone_time, [
-	    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>]],
+	    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>
+#include <stdlib.h>]],
 	    [[extern time_t timezone;
 		timezone += 1;
 		exit (0);]])],
@@ -3214,7 +3216,7 @@ print("manifest needed")
 	    eval eval "PKG_LIB_FILE=lib${PACKAGE_LIB_PREFIX}${PACKAGE_NAME}${UNSHARED_LIB_SUFFIX}"
 	fi
 	# Some packages build their own stubs libraries
-	eval eval "PKG_STUB_LIB_FILE=lib${PACKAGE_LIB_PREFIX}${PACKAGE_NAME}stub${UNSHARED_LIB_SUFFIX}"
+	eval eval "PKG_STUB_LIB_FILE=lib${PACKAGE_LIB_PREFIX8}${PACKAGE_NAME}stub${UNSHARED_LIB_SUFFIX}"
     fi
 
     # These are escaped so that only CFLAGS is picked up at configure time.
@@ -3970,7 +3972,7 @@ AC_DEFUN([TEA_INSTALLER], [
 # Tip 430 - ZipFS Modifications
 ###
 #------------------------------------------------------------------------
-# SC_ZIPFS_SUPPORT
+# TEA_ZIPFS_SUPPORT
 #	Locate a zip encoder installed on the system path, or none.
 #
 # Arguments:
@@ -3978,99 +3980,76 @@ AC_DEFUN([TEA_INSTALLER], [
 #
 # Results:
 #	Substitutes the following vars:
-#		TCL_ZIP_FILE
-#		TCL_ZIPFS_SUPPORT
-#		TCL_ZIPFS_FLAG
-#		ZIP_PROG
-#------------------------------------------------------------------------
-
-#------------------------------------------------------------------------
-# SC_PROG_ZIP
-#	Locate a zip encoder installed on the system path, or none.
-#
-# Arguments:
-#	none
-#
-# Results:
-#	Substitutes the following vars:
-#		ZIP_PROG
+#       MACHER_PROG
+#       ZIP_PROG
 #       ZIP_PROG_OPTIONS
 #       ZIP_PROG_VFSSEARCH
 #       ZIP_INSTALL_OBJS
 #------------------------------------------------------------------------
+
 AC_DEFUN([TEA_ZIPFS_SUPPORT], [
-    AC_MSG_CHECKING([for zipfs support])
+    MACHER_PROG=""
     ZIP_PROG=""
     ZIP_PROG_OPTIONS=""
     ZIP_PROG_VFSSEARCH=""
-    INSTALL_MSGS=""
-    # If our native tclsh processes the "install" command line option
-    # we can use it to mint zip files
-    AS_IF([$TCLSH_PROG install],[
-      ZIP_PROG=${TCLSH_PROG}
-      ZIP_PROG_OPTIONS="install mkzip"
-      ZIP_PROG_VFSSEARCH="."
-      AC_MSG_RESULT([Can use Native Tclsh for Zip encoding])
-    ])
-    if test "x$ZIP_PROG" = "x" ; then
-        AC_CACHE_VAL(ac_cv_path_zip, [
-        search_path=`echo ${PATH} | sed -e 's/:/ /g'`
-        for dir in $search_path ; do
-            for j in `ls -r $dir/zip 2> /dev/null` \
-                `ls -r $dir/zip 2> /dev/null` ; do
-            if test x"$ac_cv_path_zip" = x ; then
-                if test -f "$j" ; then
-                ac_cv_path_zip=$j
-                break
-                fi
-            fi
-            done
-        done
-        ])
-        if test -f "$ac_cv_path_zip" ; then
-            ZIP_PROG="$ac_cv_path_zip "
-            AC_MSG_RESULT([$ZIP_PROG])
-            ZIP_PROG_OPTIONS="-rq"
-            ZIP_PROG_VFSSEARCH="."
-            AC_MSG_RESULT([Found INFO Zip in environment])
-            # Use standard arguments for zip
-        fi
-    fi
-    if test "x$ZIP_PROG" = "x" ; then
-	    # It is not an error if an installed version of Zip can't be located.
-        ZIP_PROG=""
-        ZIP_PROG_OPTIONS=""
-        ZIP_PROG_VFSSEARCH=""
-        TCL_ZIPFS_SUPPORT=0
-        TCL_ZIPFS_FLAG=
-    else
-        # ZIPFS Support
-       eval "TCL_ZIP_FILE=\"${TCL_ZIP_FILE}\""
-       if test ${TCL_ZIP_FILE} = "" ; then
-          TCL_ZIPFS_SUPPORT=0
-          TCL_ZIPFS_FLAG=
-          INSTALL_LIBRARIES=install-libraries
-          INSTALL_MSGS=install-msgs
-       else
-           if test ${SHARED_BUILD} = 1 ; then
-              TCL_ZIPFS_SUPPORT=1
-              INSTALL_LIBRARIES=install-libraries-zipfs-shared
-           else
-              TCL_ZIPFS_SUPPORT=2
-              INSTALL_LIBRARIES=install-libraries-zipfs-static
-           fi
-          TCL_ZIPFS_FLAG=-DTCL_ZIPFS_SUPPORT
-       fi
-    fi
+    ZIP_INSTALL_OBJS=""
 
-    AC_SUBST(TCL_ZIP_FILE)
-    AC_SUBST(TCL_ZIPFS_SUPPORT)
-    AC_SUBST(TCL_ZIPFS_FLAG)
+    AC_MSG_CHECKING([for macher])
+    AC_CACHE_VAL(ac_cv_path_macher, [
+    search_path=`echo ${PATH} | sed -e 's/:/ /g'`
+    for dir in $search_path ; do
+        for j in `ls -r $dir/macher 2> /dev/null` \
+            `ls -r $dir/macher 2> /dev/null` ; do
+        if test x"$ac_cv_path_macher" = x ; then
+            if test -f "$j" ; then
+            ac_cv_path_macher=$j
+            break
+            fi
+        fi
+        done
+    done
+    ])
+    if test -f "$ac_cv_path_macher" ; then
+        MACHER_PROG="$ac_cv_path_macher"
+        AC_MSG_RESULT([$MACHER_PROG])
+        AC_MSG_RESULT([Found macher in environment])
+    fi
+    AC_MSG_CHECKING([for zip])
+    AC_CACHE_VAL(ac_cv_path_zip, [
+    search_path=`echo ${PATH} | sed -e 's/:/ /g'`
+    for dir in $search_path ; do
+        for j in `ls -r $dir/zip 2> /dev/null` \
+            `ls -r $dir/zip 2> /dev/null` ; do
+        if test x"$ac_cv_path_zip" = x ; then
+            if test -f "$j" ; then
+            ac_cv_path_zip=$j
+            break
+            fi
+        fi
+        done
+    done
+    ])
+    if test -f "$ac_cv_path_zip" ; then
+        ZIP_PROG="$ac_cv_path_zip"
+        AC_MSG_RESULT([$ZIP_PROG])
+        ZIP_PROG_OPTIONS="-rq"
+        ZIP_PROG_VFSSEARCH="*"
+        AC_MSG_RESULT([Found INFO Zip in environment])
+        # Use standard arguments for zip
+    else
+        # It is not an error if an installed version of Zip can't be located.
+        # We can use the locally distributed minizip instead
+        ZIP_PROG="./minizip${EXEEXT_FOR_BUILD}"
+        ZIP_PROG_OPTIONS="-o -r"
+        ZIP_PROG_VFSSEARCH="*"
+        ZIP_INSTALL_OBJS="minizip${EXEEXT_FOR_BUILD}"
+        AC_MSG_RESULT([No zip found on PATH. Building minizip])
+    fi
+    AC_SUBST(MACHER_PROG)
     AC_SUBST(ZIP_PROG)
     AC_SUBST(ZIP_PROG_OPTIONS)
     AC_SUBST(ZIP_PROG_VFSSEARCH)
-    AC_SUBST(INSTALL_LIBRARIES)
-    AC_SUBST(INSTALL_MSGS)
+    AC_SUBST(ZIP_INSTALL_OBJS)
 ])
 
 # Local Variables:

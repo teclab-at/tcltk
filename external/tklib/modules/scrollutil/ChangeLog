@@ -1,3 +1,110 @@
+2021-11-11  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* Released Scrollutil 1.12.
+
+2021-11-10  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* doc/*.html: Updated.
+
+2021-11-07  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* CHANGES.txt:            Added the "-ignorefocus" optional argument to
+	* scripts/wheelEvent.tcl: the "scrollutil::adaptWheelEventHandling"
+	* doc/scrollutil.html:    command.
+	* doc/wheelEvent.html:
+
+	* doc/ScrollableFrmDemo2.png: Updated screenshot.
+
+2021-10-31  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:         Bumped the version number to 1.12.
+	* COPYRIGHT.txt:
+	* README.txt:
+
+	* CHANGES.txt: Updated to reflect the changes.
+	* doc/*.html:
+
+	* scripts/*.tcl: Added the "insert", "pagecget", "pageconfigure", and
+	  "window" pagesman subcommands; the pagesman "add" subcommand now
+	  updates the options of an existing page; improved the font handling
+	  in a plainnotebook widget; fixed a bug related to the handling of the
+	  <Destroy> event for a window embedded into a scrollarea or scrollsync
+	  widget.
+
+	* scripts/tclIndex: Newly generated.
+
+	* scripts/utils/pkgIndex.tcl:  Significantly extended the procedure
+	* scripts/utils/scaleutil.tcl: "scaleutil::scalingPercentage" and
+	  adapted to the changes made recently in the Tk library file
+	  "ttk/fonts.tcl".
+
+	* doc/ScrollableFrmDemo2.png: Updated screenshot.
+
+	* ../../examples/scrollutil/styleUtil.tcl:   Several improvements.
+	* ../../examples/scrollutil/*FrmContent.tcl:
+
+2021-09-02  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* Released Scrollutil 1.11.
+
+2021-09-02  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* scripts/plainnotebook.tcl: Minor improvements related to the fonts.
+
+2021-08-24  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* scripts/plainnotebook.tcl: Reworked the binding script for
+	  <<TkWorldChanged>> with %d set to "FontChanged".
+
+2021-08-24  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* doc/pagesman.html:            Minor corrections.
+	* doc/scrollednotebook.html:
+	* scripts/scrollednotebook.tcl:
+
+	* scripts/plainnotebook.tcl: Added binding for <<TkWorldChanged>> with
+	  %d set to "FontChanged" (see TIP 608).
+
+	* scripts/tclIndex: Newly generated.
+
+2021-08-23  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:         Bumped the version number to 1.11; corrected the
+	* COPYRIGHT.txt: required tile version from 0.6 to 0.8.
+	* README.txt:
+
+	* CHANGES.txt: Updated to reflect the changes.
+	* doc/*.html:
+
+	* scripts/*.tcl: Added the "-setfocus" scrollarea configuration option;
+	  added the "-forgetcommand", "-leavecommand", and "-movabletabs"
+	  scrollednotebook configuration options; added the plainnotebook and
+	  pagesman widgets.
+
+	* scripts/tclIndex: Newly generated.
+
+	* scripts/utils/pkgIndex.tcl:  Fixed a bug related to the supported
+	* scripts/utils/scaleutil.tcl: scaling percentages on Windows.
+
+	* doc/PlainNotebookDemo.png:  Added screenshots.
+	* doc/PagesManDemo.png:
+	* doc/PagesManDemoImages.png:
+
+	* doc/ScrolledNotebookDemo.png: Updated screenshot.
+
+	* ../../examples/scrollutil/PlainNotebookDemo.tcl: Added demo scripts.
+	* ../../examples/scrollutil/PagesManDemo.tcl:
+
+	* ../../examples/scrollutil/ScrolledNotebookDemo.tcl: Now makes use of
+	  the "-forgetcommand" and "-leavecommand" scrollednotebook options.
+
+	* ../../examples/scrollutil/styleUtil.tcl:       Many improvements.
+	* ../../examples/scrollutil/TtkNotebookDemo.tcl:
+
+	* ../../examples/scrollutil/file*.gif: Updated image files.
+
+	* ../../examples/scrollutil/folder*.gif: Added image files.
+
 2021-05-28  Csaba Nemethi <csaba.nemethi@t-online.de>
 
 	* Released Scrollutil 1.10.

@@ -224,7 +224,8 @@ proc getCanvasPhoto { canvId } {
     set retVal [catch {image create photo -format window -data $canvId} ph]
     set eTime [clock clicks -milliseconds]
     if { $retVal != 0 } {
-        P "\n\tFATAL ERROR: Cannot create photo from canvas window"
+        P "\n\tFATAL ERROR: Cannot create photo from canvas window."
+        P "\tError message: $ph"
         exit 1
     }
     P "[format "%.2f secs" [expr ($eTime - $sTime) / 1.0E3]]"
@@ -236,21 +237,23 @@ proc delayedUpdate {} {
     after 200
 }
 
-proc drawInfo { x y color font } {
+proc drawInfo { canvId x y color font } {
     set size 10
     set tx [expr $x + $size * 2]
-    .t.c create rectangle $x $y [expr $x + $size] [expr $y + $size] -fill $color
-    .t.c create text $tx $y -anchor nw -fill black -text "$color box" -font $font
+    $canvId create rectangle $x $y [expr $x + $size] [expr $y + $size] -fill $color
+    $canvId create text $tx $y -anchor nw -fill black -text "$color box" -font $font
     delayedUpdate
 }
 
 proc drawTestCanvas { imgVersion} {
-    toplevel .t
-    wm title .t "Canvas window"
-    wm geometry .t "+0+30"
+    set tw .0Win
+    toplevel $tw
+    wm title $tw "Canvas window"
+    wm geometry $tw "+0+30"
 
-    canvas .t.c -bg gray -width 240 -height 220
-    pack .t.c
+    set canvId $tw.c
+    canvas $canvId -bg gray -width 240 -height 220
+    pack $canvId
 
     P "Loading uuencoded GIF image into canvas .." 
     set retVal [catch {image create photo -data [pwrdLogo]} phImg]
@@ -260,28 +263,29 @@ proc drawTestCanvas { imgVersion} {
         exit 1
     }
 
-    .t.c create image 0 0 -anchor nw -tags MyImage
-    .t.c itemconfigure MyImage -image $phImg
+    $canvId create image 0 0 -anchor nw -tags MyImage
+    $canvId itemconfigure MyImage -image $phImg
 
     P "Drawing text and rectangles into canvas .." 
-    .t.c create rectangle 1 1 239 219 -outline black
-    .t.c create rectangle 3 3 237 217 -outline green -width 2
+    $canvId create rectangle 1 1 239 219 -outline black
+    $canvId create rectangle 3 3 237 217 -outline green -width 2
     delayedUpdate
 
     set font {-family {Courier} -size 9}
 
-    drawInfo 140  10 black   $font
-    drawInfo 140  30 white   $font
-    drawInfo 140  50 red     $font
-    drawInfo 140  70 green   $font
-    drawInfo 140  90 blue    $font
-    drawInfo 140 110 cyan    $font
-    drawInfo 140 130 magenta $font
-    drawInfo 140 150 yellow  $font
+    drawInfo $canvId 140  10 black   $font
+    drawInfo $canvId 140  30 white   $font
+    drawInfo $canvId 140  50 red     $font
+    drawInfo $canvId 140  70 green   $font
+    drawInfo $canvId 140  90 blue    $font
+    drawInfo $canvId 140 110 cyan    $font
+    drawInfo $canvId 140 130 magenta $font
+    drawInfo $canvId 140 150 yellow  $font
 
-    .t.c create text 140 170 -anchor nw -fill black -text "Created with:" -font $font
+    $canvId create text 140 170 -anchor nw -fill black -text "Created with:" -font $font
     delayedUpdate
-    .t.c create text 140 185 -anchor nw -fill black -text "Tcl [info patchlevel]" -font $font
-    .t.c create text 140 200 -anchor nw -fill black -text "Img $imgVersion" -font $font
+    $canvId create text 140 185 -anchor nw -fill black -text "Tcl [info patchlevel]" -font $font
+    $canvId create text 140 200 -anchor nw -fill black -text "Img $imgVersion" -font $font
     update
+    return $canvId
 }

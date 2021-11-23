@@ -51,7 +51,6 @@ typedef struct ColormapData {	/* Hold color information for a window */
  * Prototypes for local procedures defined in this file:
  */
 
-#define UCHAR(c) ((unsigned char) (c))
 /*
  *--------------------------------------------------------------
  *
@@ -168,8 +167,7 @@ static int ObjMatch(
 
     name = tkimg_GetStringFromObj2(data, NULL);
 
-    if (interp && name && (name[0] == '.') &&
-        ((name[1] == 0) || islower(UCHAR(name[1])))) {
+    if (interp && name && (name[0] == '.') ) { 
 	tkwin = Tk_MainWindow(interp);
 	if (tkwin == NULL) {
 	    return 0;
@@ -298,12 +296,12 @@ static int ObjRead(
     tkwin = Tk_NameToWindow(interp, name, Tk_MainWindow(interp));
 
     if (!tkwin) {
-	Tcl_AppendResult(interp, "Window \"", name,"\" doesn't exist", (char *) NULL);
+	Tcl_AppendResult(interp, " Window \"", name,"\" does not exist.", (char *) NULL);
 	return TCL_ERROR;
     }
 
     if (!Tk_WindowId(tkwin)) {
-	Tcl_AppendResult(interp, "Window \"", name,"\" is not mapped", (char *) NULL);
+	Tcl_AppendResult(interp, " Window \"", name,"\" is not mapped.", (char *) NULL);
 	return TCL_ERROR;
     }
 

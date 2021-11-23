@@ -21,10 +21,8 @@
 #		comm interps
 #
 #	See the manual page comm.n for further details on this package.
-#
-# RCS: @(#) $Id: comm.tcl,v 1.34 2010/09/15 19:48:33 andreas_kupries Exp $
 
-package require Tcl 8.3
+package require Tcl 8.5
 package require snit ; # comm::future objects.
 
 namespace eval ::comm {
@@ -1588,24 +1586,16 @@ proc ::comm::CommRunHook {chan event} {
 	}
 
 	commDebug {puts stderr "<$chan> /interp $interp"}
-	set code [catch {interp eval $interp $cmd} res]
+	set code [catch {interp eval $interp $cmd} res options]
     } else {
 	commDebug {puts stderr "<$chan> /main"}
-	set code [catch {uplevel 1 $cmd} res]
+	set code [catch {uplevel 1 $cmd} res options]
     }
 
     # Perform the return code propagation promised
     # to the hook scripts.
-    switch -exact -- $code {
-	0 {}
-	1 {
-	    return -errorinfo $::errorInfo -errorcode $::errorCode -code error $res
-	}
-	3 {return}
-	4 {}
-	default {return -code $code $res}
-    }
-    return
+	return -options $options $options
+
 }
 
 # ### ### ### ######### ######### #########
@@ -1815,4 +1805,4 @@ if {![info exists ::comm::comm(comm,port)]} {
 }
 
 #eof
-package provide comm 4.6.3.1
+package provide comm 4.7

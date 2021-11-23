@@ -319,10 +319,10 @@ CommonRead(
     while (1) {
         if (tkimg_Read2(&gifConfPtr->handle, (char *)buf, 1) != 1) {
             /*
-             * Premature end of image.  We should really notify
-             * the user, but for now just show garbage.
+             * Premature end of image.
              */
-            break;
+            Tcl_AppendResult(interp,"premature end of image data", (char *) NULL);
+            goto error;
         }
 
         if (buf[0] == GIF_TERMINATOR) {

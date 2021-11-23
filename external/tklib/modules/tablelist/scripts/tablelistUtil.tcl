@@ -307,6 +307,45 @@ proc tablelist::colIndex {win idx checkRange {decrX 1}} {
 }
 
 #------------------------------------------------------------------------------
+# tablelist::colIndex2
+#
+# Returns the numerical equivalent of the column index idx.  Invoked by the
+# dicttoitem and itemtodict subcommands.
+#------------------------------------------------------------------------------
+proc tablelist::colIndex2 {win idx} {
+    upvar ::tablelist::ns${win}::data data
+
+    if {[isInteger $idx]} {
+	return [expr {int($idx)}]
+    } elseif {[string first $idx "end"] == 0 ||
+	      [string first $idx "last"] == 0} {
+	return $data(lastCol)
+    } elseif {[string first $idx "left"] == 0} {
+	return [colIndex $win @0,0 0 0]
+    } elseif {[string first $idx "right"] == 0} {
+	return [colIndex $win @$data(rightX),0 0 0]
+    } elseif {[string first $idx "active"] == 0 && [string length $idx] >= 2} {
+	return $data(activeCol)
+    } elseif {[string first $idx "anchor"] == 0 && [string length $idx] >= 2} {
+	return $data(anchorCol)
+    } elseif {[scan $idx "@%d,%d%n" x y count] == 3 &&
+	      $count == [string length $idx]} {
+	return [colIndex $win @$x,$y 0 1]
+    } else {
+	set idxIsEmpty [expr {[string length $idx] == 0}]
+	for {set col 0} {$col < $data(colCount)} {incr col} {
+	    set hasName [info exists data($col-name)]
+	    if {($hasName && [string compare $idx $data($col-name)] == 0) ||
+		(!$hasName && $idxIsEmpty)} {
+		return $col
+	    }
+	}
+
+	return -1
+    }
+}
+
+#------------------------------------------------------------------------------
 # tablelist::cellIndex
 #
 # Checks the cell index idx and returns either a list of the form {row col} or
@@ -2151,6 +2190,11 @@ proc tablelist::appendComplexElem {win key row col text pixels alignment
 			       $data(headerTag) TablelistHeader]
 	    }
 	    uplevel #0 $data($key,$col-window) [list $win $row $col $aux.w]
+	    set reqHeight [winfo reqheight $aux.w]
+	    if {$reqHeight != 1 && $reqHeight != $data($key,$col-reqHeight)} {
+		set data($key,$col-reqHeight) $reqHeight
+		$aux configure -height $reqHeight
+	    }
 	}
 	if {$multiline} {
 	    insertMlElem $w $line.end-1$pu $msgScript $aux $auxType \
@@ -2396,12 +2440,14 @@ proc tablelist::setupColumns {win columns createLabels} {
 	    if {$usingTile} {
 		ttk::label $w -style Tablelist.Heading -image "" \
 			      -padding {1 1 1 1} -takefocus 0 -text "" \
-			      -textvariable "" -underline -1 -wraplength 0
+			      -textvariable "" -wraplength 0
 	    } else {
 		tk::label $w -bitmap "" -highlightthickness 0 -image "" \
 			     -takefocus 0 -text "" -textvariable "" \
-			     -underline -1 -wraplength 0
+			     -wraplength 0
 	    }
+	    set defVal [lindex [$w configure -underline] 3]
+	    $w configure -underline $defVal	;# -1 or "" (see TIP #577)
 
 	    #
 	    # Apply to it the current configuration options
@@ -3051,14 +3097,19 @@ proc tablelist::adjustLabel {win col pixels alignment} {
     if {[lsearch -exact $data(arrowColList) $col] >= 0} {
 	set canvas $data(hdrTxtFrmCanv)$col
 	set canvasWidth $data(arrowWidth)
+	variable centerArrows
 	if {[llength $data(arrowColList)] > 1} {
-	    incr canvasWidth 6
+	    variable scalingpct
+	    if {$scalingpct > 150} {
+		incr canvasWidth [expr {$centerArrows ? 7 : 9}]
+	    } else {
+		incr canvasWidth 6
+	    }
 	    $canvas itemconfigure sortRank \
 		    -image sortRank$data($col-sortRank)Img$win
 	}
 	$canvas configure -width $canvasWidth
 
-	variable centerArrows
 	if {!$centerArrows} {
 	    set spaceWidth [font measure $labelFont -displayof $w " "]
 	    set spaces "  "
@@ -3466,6 +3517,9 @@ proc tablelist::computeLabelWidth {win col} {
 #------------------------------------------------------------------------------
 proc tablelist::adjustHeaderHeight win {
     upvar ::tablelist::ns${win}::data data
+    if {!$data(colListValid)} {
+	return ""
+    }
 
     #
     # Set the height of the header frame and some of its descendants
@@ -3587,7 +3641,7 @@ proc tablelist::stretchColumns {win colOfFixedDelta} {
     set forceAdjust $data(forceAdjust)
     set data(forceAdjust) 0
 
-    if {$data(hdrWidth) == 0} {
+    if {$data(hdrWidth) == 0 || !$data(colListValid)} {
 	return ""
     }
 
@@ -3805,6 +3859,7 @@ proc tablelist::updateColors {win {fromTextIdx ""} {toTextIdx ""}} {
 	    set colorizeCmd $data(-colorizecommand)
 	}
 
+	variable disp
 	variable canElide
 	variable elide
 	set rightCol [colIndex $win @$data(rightX),0 0 0]
@@ -3813,12 +3868,9 @@ proc tablelist::updateColors {win {fromTextIdx ""} {toTextIdx ""}} {
 	if {$btmLine > $data(itemCount)} {
 	    set btmLine $data(itemCount)
 	}
-	for {set line $topLine; set row [expr {$line - 1}]} \
-	    {$line <= $btmLine} {set row $line; incr line} {
-	    set key [lindex $data(keyList) $row]
-	    if {[info exists data($key-elide)] ||
-		[info exists data($key-hide)] ||
-		![findTabs $win $w $line $leftCol $leftCol tabIdx1 tabIdx2]} {
+	for {set line $topLine} {$line <= $btmLine} \
+	    {set line [expr {int([$w index "$line.end + 1 $disp c"])}]} {
+	    if {![findTabs $win $w $line $leftCol $leftCol tabIdx1 tabIdx2]} {
 		continue
 	    }
 
@@ -3832,6 +3884,8 @@ proc tablelist::updateColors {win {fromTextIdx ""} {toTextIdx ""}} {
 	    # -(select)background and -(select)foreground column,
 	    # row, and cell configuration options in this row
 	    #
+	    set row [expr {$line - 1}]
+	    set key [lindex $data(keyList) $row]
 	    set lineTagNames [$w tag names $line.0]
 	    set inStripe [expr {[lsearch -exact $lineTagNames stripe] >= 0}]
 	    for {set col $leftCol} {$col <= $rightCol} {incr col} {
@@ -4267,6 +4321,10 @@ proc tablelist::updateScrlColOffset win {
     upvar ::tablelist::ns${win}::data data
     unset data(offsetId)
 
+    if {!$data(colListValid)} {
+	return ""
+    }
+
     set maxScrlColOffset [getMaxScrlColOffset $win]
     if {$data(scrlColOffset) > $maxScrlColOffset} {
 	set data(scrlColOffset) $maxScrlColOffset
@@ -4432,6 +4490,7 @@ proc tablelist::adjustElidedText win {
     #
     variable canElide
     variable elide
+    variable disp
     variable pu
     if {$canElide && $data(hiddenColCount) > 0 && $data(itemCount) > 0} {
 	set topLine [expr {int([$w index @0,0])}]
@@ -4439,14 +4498,8 @@ proc tablelist::adjustElidedText win {
 	if {$btmLine > $data(itemCount)} {
 	    set btmLine $data(itemCount)
 	}
-	for {set line $topLine; set row [expr {$line - 1}]} \
-	    {$line <= $btmLine} {set row $line; incr line} {
-	    set key [lindex $data(keyList) $row]
-	    if {[info exists data($key-elide)] ||
-		[info exists data($key-hide)]} {
-		continue
-	    }
-
+	for {set line $topLine} {$line <= $btmLine} \
+	    {set line [expr {int([$w index "$line.end + 1 $disp c"])}]} {
 	    set textIdx1 $line.0
 	    for {set col 0; set count 0} \
 		{$col < $data(colCount) && $count < $data(hiddenColCount)} \
@@ -4474,14 +4527,8 @@ proc tablelist::adjustElidedText win {
 	}
 
 	if {[lindex [$w yview] 1] == 1} {
-	    for {set line $btmLine; set row [expr {$line - 1}]} \
-		{$line >= $topLine} {set line $row; incr row -1} {
-		set key [lindex $data(keyList) $row]
-		if {[info exists data($key-elide)] ||
-		    [info exists data($key-hide)]} {
-		    continue
-		}
-
+	    for {set line $btmLine} {$line >= $topLine} \
+		{set line [expr {int([$w index "$line.0 - 1 $disp c"])}]} {
 		set textIdx1 $line.0
 		for {set col 0; set count 0} \
 		    {$col < $data(colCount) && $count < $data(hiddenColCount)} \
@@ -4496,6 +4543,10 @@ proc tablelist::adjustElidedText win {
 			$w tag add hiddenCol $textIdx1 $textIdx2
 		    }
 		    set textIdx1 $textIdx2
+		}
+
+		if {$line == 1} {
+		    break
 		}
 
 		#
@@ -4555,15 +4606,11 @@ proc tablelist::adjustElidedText win {
 	if {$btmLine > $data(itemCount)} {
 	    set btmLine $data(itemCount)
 	}
-	for {set line $topLine; set row [expr {$line - 1}]} \
-	    {$line <= $btmLine} {set row $line; incr line} {
-	    set key [lindex $data(keyList) $row]
-	    if {![info exists data($key-elide)] &&
-		![info exists data($key-hide)]} {
-		if {[findTabs $win $w $line $firstCol $lastCol \
-		     tabIdx1 tabIdx2]} {
-		    $w tag add elidedCol $tabIdx1 $tabIdx2+1$pu
-		}
+	for {set line $topLine} {$line <= $btmLine} \
+	    {set line [expr {int([$w index "$line.end + 1 $disp c"])}]} {
+	    if {[findTabs $win $w $line $firstCol $lastCol \
+		 tabIdx1 tabIdx2]} {
+		$w tag add elidedCol $tabIdx1 $tabIdx2+1$pu
 	    }
 
 	    #
@@ -4576,15 +4623,15 @@ proc tablelist::adjustElidedText win {
 	}
 
 	if {[lindex [$w yview] 1] == 1} {
-	    for {set line $btmLine; set row [expr {$line - 1}]} \
-		{$line >= $topLine} {set line $row; incr row -1} {
-		set key [lindex $data(keyList) $row]
-		if {![info exists data($key-elide)] &&
-		    ![info exists data($key-hide)]} {
-		    if {[findTabs $win $w $line $firstCol $lastCol \
-			 tabIdx1 tabIdx2]} {
-			$w tag add elidedCol $tabIdx1 $tabIdx2+1$pu
-		    }
+	    for {set line $btmLine} {$line >= $topLine} \
+		{set line [expr {int([$w index "$line.0 - 1 $disp c"])}]} {
+		if {[findTabs $win $w $line $firstCol $lastCol \
+		     tabIdx1 tabIdx2]} {
+		    $w tag add elidedCol $tabIdx1 $tabIdx2+1$pu
+		}
+
+		if {$line == 1} {
+		    break
 		}
 
 		#
@@ -5089,6 +5136,7 @@ proc tablelist::redisplayVisibleItems win {
 	return ""
     }
 
+    variable disp
     variable canElide
     variable elide
     variable snipSides
@@ -5102,15 +5150,15 @@ proc tablelist::redisplayVisibleItems win {
     }
     set snipStr $data(-snipstring)
 
-    for {set line $topLine; set row [expr {$line - 1}]} \
-	{$line <= $btmLine} {set row $line; incr line} {
-	set item [lindex $data(itemList) $row]
-	set key [lindex $item end]
-	if {[info exists data($key-elide)] ||
-	    [info exists data($key-hide)] ||
-	    ![findTabs $win $w $line $leftCol $leftCol tabIdx1 tabIdx2]} {
+    for {set line $topLine} {$line <= $btmLine} \
+	{set line [expr {int([$w index "$line.end + 1 $disp c"])}]} {
+	if {![findTabs $win $w $line $leftCol $leftCol tabIdx1 tabIdx2]} {
 	    continue
 	}
+
+	set row [expr {$line - 1}]
+	set item [lindex $data(itemList) $row]
+	set key [lindex $item end]
 
 	#
 	# Format the item
@@ -5344,6 +5392,12 @@ proc tablelist::redisplayCol {win col first last {inBody 1}} {
 		bindtags $aux [linsert [bindtags $aux] 1 \
 			       $data(bodyTag) TablelistBody]
 		uplevel #0 $data($key,$col-window) [list $win $row $col $aux.w]
+		set reqHeight [winfo reqheight $aux.w]
+		if {$reqHeight != 1 &&
+		    $reqHeight != $data($key,$col-reqHeight)} {
+		    set data($key,$col-reqHeight) $reqHeight
+		    $aux configure -height $reqHeight
+		}
 	    }
 
 	    if {$multiline} {
@@ -5445,6 +5499,12 @@ proc tablelist::redisplayCol {win col first last {inBody 1}} {
 		bindtags $aux [linsert [bindtags $aux] 1 \
 			       $data(bodyTag) TablelistBody]
 		uplevel #0 $data($key,$col-window) [list $win $row $col $aux.w]
+		set reqHeight [winfo reqheight $aux.w]
+		if {$reqHeight != 1 &&
+		    $reqHeight != $data($key,$col-reqHeight)} {
+		    set data($key,$col-reqHeight) $reqHeight
+		    $aux configure -height $reqHeight
+		}
 	    }
 
 	    if {$multiline} {
@@ -5541,6 +5601,10 @@ proc tablelist::showLineNumbersWhenIdle win {
 proc tablelist::showLineNumbers win {
     upvar ::tablelist::ns${win}::data data
     unset data(lineNumsId)
+
+    if {!$data(colListValid)} {
+	return ""
+    }
 
     #
     # Update the item list
@@ -6044,9 +6108,15 @@ proc tablelist::configLabel {w args} {
 # Creates two arrows in the canvas w.
 #------------------------------------------------------------------------------
 proc tablelist::createArrows {w width height relief} {
-    if {$height < 6} {
-	set wHeight 6
-	variable centerArrows
+    variable scalingpct
+    variable centerArrows
+    if {$scalingpct > 150} {
+	set minHeight [expr {$centerArrows ? 8 : 10}]
+    } else {
+	set minHeight 6
+    }
+    if {$height < $minHeight} {
+	set wHeight $minHeight
 	set y [expr {$centerArrows ? 0 : 1}]
     } else {
 	set wHeight $height
@@ -6086,7 +6156,9 @@ proc tablelist::createArrows {w width height relief} {
     #
     $w delete sortRank
     set x [expr {$width + 2}]
-    set y [expr {$wHeight - 6}]
+    if {!$centerArrows} {
+	set y [expr {$wHeight - $minHeight}]
+    }
     $w create image $x $y -anchor nw -tags sortRank
 }
 
@@ -6490,8 +6562,9 @@ proc tablelist::getVertComplTopRow win {
     set topRow [expr {int($topTextIdx) - 1}]
 
     foreach {x y width height baselinePos} [$w dlineinfo $topTextIdx] {}
-    if {$y < 0} {
-	incr topRow		;# top row incomplete in vertical direction
+    if {$y < 0} {		;# top row incomplete in vertical direction
+	set topTextIdx [$w index @0,[incr y $height]]
+	set topRow [expr {int($topTextIdx) - 1}]
     }
 
     return $topRow
@@ -6517,8 +6590,9 @@ proc tablelist::getVertComplBtmRow win {
     set y2 [expr {$y + $height}]
     set text [$w get @0,$y @[expr {$data(rightX) + 1}],$y]
     if {[$w compare [$w index @0,$y] == [$w index @0,$y2]] &&
-	[string length $text] != 0} {
-	incr btmRow -1		;# btm row incomplete in vertical direction
+	[string length $text] != 0} {	;# btm row incomplete in vertical dir.
+	set btmTextIdx [$w index @0,[incr y -1]]
+	set btmRow [expr {int($btmTextIdx) - 1}]
     }
 
     return $btmRow
@@ -6662,12 +6736,14 @@ proc tablelist::makeCkbtn w {
 	x11 {
 	    variable checkedImg
 	    variable uncheckedImg
+	    variable tristateImg
 	    if {![info exists checkedImg]} {
 		createCheckbuttonImgs
 	    }
 
 	    $w configure -borderwidth 1 -indicatoron 0 \
-		-image $uncheckedImg -selectimage $checkedImg
+		-image $uncheckedImg -selectimage $checkedImg \
+		-tristateimage $tristateImg
 	    if {$::tk_version >= 8.4} {
 		$w configure -offrelief sunken	;# -offrelief added in Tk8.4
 	    }
@@ -6685,12 +6761,14 @@ proc tablelist::makeCkbtn w {
 	    } else {
 		variable checkedImg
 		variable uncheckedImg
+		variable tristateImg
 		if {![info exists checkedImg]} {
 		    createCheckbuttonImgs
 		}
 
 		$w configure -borderwidth 2 -indicatoron 0 \
-		    -image $uncheckedImg -selectimage $checkedImg
+		    -image $uncheckedImg -selectimage $checkedImg \
+		    -tristateimage $tristateImg
 		if {$::tk_version >= 8.4} {
 		    $w configure -offrelief sunken ;# -offrelief added in Tk8.4
 		}
@@ -6807,7 +6885,7 @@ proc tablelist::makeTtkCkbtn w {
 		    style layout Tablelist.TCheckbutton \
 			  { Checkbutton.indicator }
 		}
-	    } else {
+	    } else {		;# see procedure scaleutil::patchWinTheme
 		catch {
 		    style layout Tablelist.TCheckbutton \
 			  { Checkbutton.vsapi_indicator }
@@ -6820,7 +6898,9 @@ proc tablelist::makeTtkCkbtn w {
 		style layout Tablelist.TCheckbutton \
 		      { Checkbutton.indicator }
 	    }
-	    styleConfig Tablelist.TCheckbutton -indicatormargin 0
+
+	    set indMargin [expr {$currentTheme eq "clam" ? {0 0 1 1} : 0}]
+	    styleConfig Tablelist.TCheckbutton -indicatormargin $indMargin
 	}
     }
 
@@ -6830,7 +6910,17 @@ proc tablelist::makeTtkCkbtn w {
     # Adjust the dimensions of the ttk::checkbutton's parent and
     # manage the checkbutton, depending on the current theme
     #
+
     set frm [winfo parent $w]
+    variable isAwTheme
+    if {$isAwTheme} {
+	set height [winfo reqheight $w]
+	incr height -1
+	$frm configure -width $height -height $height
+	place $w -x 0
+	return [list $height $height]
+    }
+
     switch -- $currentTheme {
 	aqua {
 	    variable extendedAquaSupport
@@ -6855,49 +6945,32 @@ proc tablelist::makeTtkCkbtn w {
 	}
 
 	Aquativo - aquativo -
-	Arc - arc - awarc {
+	Arc - arc {
 	    $frm configure -width 14 -height 14
 	    place $w -x -1 -y -1
 	    return {14 14}
 	}
 
 	blue -
-	Breeze - breeze - awbreeze - awbreezedark -
-	winxpblue - awwinxpblue {
+	Breeze - breeze -
+	winxpblue {
 	    set height [winfo reqheight $w]
 	    $frm configure -width $height -height $height
 	    place $w -x 0
 	    return [list $height $height]
 	}
 
-	clam {
-	    variable scalingpct
-	    array set arr {100 11  125 14  150 18  175 21  200 24}
-	    styleConfig Tablelist.TCheckbutton -indicatorsize $arr($scalingpct)
-	    pack $w
-	    return [list $arr($scalingpct) $arr($scalingpct)]
-	}
-
 	classic -
 	default {
-	    variable scalingpct
-	    array set arr {100 11  125 14  150 18  175 21  200 24}
-	    styleConfig Tablelist.TCheckbutton -background white \
-		-indicatordiameter $arr($scalingpct)
+	    styleConfig Tablelist.TCheckbutton -background white
 	    pack $w
-	    return [list $arr($scalingpct) $arr($scalingpct)]
+	    return [list [winfo reqwidth $w] [winfo reqheight $w]]
 	}
 
-	clearlooks - awclearlooks {
-	    variable isAwTheme
-	    if {$isAwTheme} {
-		pack $w
-		return [list [winfo reqwidth $w] [winfo reqheight $w]]
-	    } else {
-		$frm configure -width 13 -height 13
-		place $w -x -2 -y -2
-		return {13 13}
-	    }
+	clearlooks {
+	    $frm configure -width 13 -height 13
+	    place $w -x -2 -y -2
+	    return {13 13}
 	}
 
 	keramik - keramik_alt {
@@ -6973,8 +7046,9 @@ proc tablelist::makeTtkCkbtn w {
 	    $frm configure -width $height -height $height
 	    if {[llength [style lookup TCheckbutton -padding]] == 1} {
 		place $w -x 0
-	    } else {
-		place $w -x -4
+	    } else {		;# see procedure scaleutil::patchWinTheme
+		variable scalingpct
+		place $w -x -[expr {2 * [scaleutil::scale 2 $scalingpct]}]
 	    }
 	    return [list $height $height]
 	}

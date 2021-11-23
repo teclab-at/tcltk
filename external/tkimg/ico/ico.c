@@ -475,7 +475,7 @@ static int ParseFormatOpts(
                     opts->verbose = boolVal;
                     break;
                 case 1:
-                    if (Tcl_GetInt(interp, optionStr, &intVal) == TCL_ERROR || intVal <= 0) {
+                    if (Tcl_GetInt(interp, optionStr, &intVal) == TCL_ERROR || intVal < 0) {
                         Tcl_AppendResult (interp, "Invalid index \"", optionStr,
                                           "\": Must be zero or positive.", (char *) NULL);
                         return TCL_ERROR;

@@ -1,5 +1,76 @@
-What is new in Scrollutil 1.10?
+What is new in Scrollutil 1.12?
 -------------------------------
+
+1. The "scrollutil::adaptWheelEventHandling" command now accepts as
+   optional first argument the "-ignorefocus" switch, which specifies
+   that the mouse wheel events are to be handled by the widget under
+   the pointer (only), ragardless of whether that widget has the focus
+   or not (thanks to Alexandru Dadalau for his proposal).
+
+2. Added the "insert", "pagecget", "pageconfigure", and "window"
+   pagesman subcommands.
+
+3. If the window passed to the pagesman "add" subcommand is already
+   managed by the pagesman widget, then the subcommand now uses its
+   optional arguments to update the options of the corresponding page.
+   The same holds true for the new "insert" subcommand.
+
+4. Significantly extended the code responsible for initializing the
+   variable "scrollutil::scalingpct".  See the section "More on
+   scrollutil::scalingpct" in Scrollutil Programmer's Guide for details.
+
+5. Made sure that the above-mentioned code will work as expected also
+   with future Tk versions containing the changes made recently in the
+   library file "ttk/fonts.tcl".
+
+6. Fixed a bug related to the handling of the <Destroy> event for the
+   widget embedded into a scrollarea (thanks to Alexandru Dadalau for
+   his bug report).
+
+7. Several updates and improvements in the demo scripts.
+
+What was new in Scrollutil 1.11?
+--------------------------------
+
+1. Added the "-setfocus" scrollarea configuration option, which controls
+   whether clicking one of the scrollbars should set the focus to the
+   widget embedded into the scrollarea (thanks to Alexandru Dadalau for
+   discussions on a related subject).
+
+2. Added the "-forgetcommand", "-leavecommand", and "-movabletabs"
+   scrollednotebook configuration options.
+
+3. Added the plainnotebook widget, which extends a ttk::notebook having
+   an arbitrary number of pages with invisible tabs by a ttk::frame to
+   its left or right containing, among others, a scrollableframe whose
+   content frame is the parent of a series of widgets that play the role
+   of vertically laid-out notebook tabs.  The above-mentioned options
+   are supported by this widget, too, and its "-closabletabs" option
+   controls whether the tabs can be closed with the mouse.
+
+4. Added the pagesman widget, which provides the basic functionality of
+   a pages manager.  By using it with plainnotebook widgets as pages, it
+   is quite easy to write applications in which the user can descend
+   from a plainnotebook to another one with a single mouse click and
+   switch back in the same way to the original one.  Everything needed
+   for this navigation is provided by appropriate options and
+   subcommands of the plainnotebook widget.
+
+5. The demo script "ScrolledNotebookDemo.tcl" now makes use of the
+   "-forgetcommand" and "-leavecommand" scrollednotebook options.
+
+6. Added two new demo scripts using the plainnotebook and pagesman
+   widgets, together with their "-forgetcommand" and "-leavecommand"
+   options.  The plainnotebook widgets of these scripts have closable
+   and (per default) movable tabs.
+
+7. Corrected the required tile version from 0.6 to 0.8.
+
+8. Fixed a bug related to the supported scaling percentages on Windows
+   (thanks to Manfred Schwarz for his bug report).
+
+What was new in Scrollutil 1.10?
+--------------------------------
 
 1. Added the (scalable) "closetab" style element, which can be added to
    and removed from the tabs of a ttk::notebook style (like "TNotebook"

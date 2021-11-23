@@ -53,7 +53,7 @@ if { $tcl_platform(platform) eq "windows" && $ui_enable_tk } {
 ui_init "testFull.tcl: Read/Write (Full Images)" "+320+30"
 SetFileTypes
 
-drawTestCanvas $version
+set canvId [drawTestCanvas $version]
 
 P ""
 set sep ""
@@ -61,7 +61,7 @@ if { $ui_enable_tk } {
     set sep "\n\t"
 }
 set count 1
-set phCanvas [getCanvasPhoto .t.c]
+set phCanvas [getCanvasPhoto $canvId]
 foreach elem $fmtList {
     set ext [lindex $elem 0]
     set fmt [lindex $elem 1]
