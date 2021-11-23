@@ -22,7 +22,7 @@ namespace eval ::tdbc {
 #
 # tdbc::ParseConvenienceArgs --
 #
-#	Parse the convenience arguments to a TDBC 'execute', 
+#	Parse the convenience arguments to a TDBC 'execute',
 #	'executewithdictionary', or 'foreach' call.
 #
 # Parameters:
@@ -45,9 +45,9 @@ proc tdbc::ParseConvenienceArgs {argv optsVar} {
 
     set opts [dict create -as dicts]
     set i 0
-    
+
     # Munch keyword options off the front of the command arguments
-    
+
     foreach {key value} $argv {
 	if {[string index $key 0] eq {-}} {
 	    switch -regexp -- $key {
@@ -85,7 +85,7 @@ proc tdbc::ParseConvenienceArgs {argv optsVar} {
     }
 
     return [lrange $argv[set argv {}] $i end]
-    
+
 }
 
 
@@ -150,7 +150,7 @@ oo::class create ::tdbc::connection {
     # and have it call 'prepare' as needed (or do something else and
     # install the resulting statement)
 
-    # The 'statements' method lists the statements active against this 
+    # The 'statements' method lists the statements active against this
     # connection.
 
     method statements {} {
@@ -215,7 +215,7 @@ oo::class create ::tdbc::connection {
 
 	set args [::tdbc::ParseConvenienceArgs $args[set args {}] opts]
 
-	# Check postitional parameters 
+	# Check postitional parameters
 
 	set cmd [list [self] prepare]
 	if {[llength $args] == 1} {
@@ -259,7 +259,7 @@ oo::class create ::tdbc::connection {
     # it sets a variable to the row and invokes a script in the caller's
     # scope.
     #
-    # Usage: 
+    # Usage:
     #     $db foreach ?-as lists|dicts? ?-columnsVariable varName? ?--?
     #         varName sql ?dictionary? script
 
@@ -271,7 +271,7 @@ oo::class create ::tdbc::connection {
 
 	set args [::tdbc::ParseConvenienceArgs $args[set args {}] opts]
 
-	# Check postitional parameters 
+	# Check postitional parameters
 
 	set cmd [list [self] prepare]
 	if {[llength $args] == 3} {
@@ -330,27 +330,27 @@ oo::class create ::tdbc::connection {
 
 	set catalogClause {}
 	if {[lindex [set count [my allrows -as lists {
-	    SELECT COUNT(*) 
+	    SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
             WHERE CONSTRAINT_CATALOG IS NOT NULL}]] 0 0] != 0} {
 	    set catalogClause \
 		{AND xtable.CONSTRAINT_CATALOG = xcolumn.CONSTRAINT_CATALOG}
 	}
 	set primaryKeysStatement [my prepare "
-	     SELECT xtable.TABLE_SCHEMA AS \"tableSchema\", 
+	     SELECT xtable.TABLE_SCHEMA AS \"tableSchema\",
                  xtable.TABLE_NAME AS \"tableName\",
-                 xtable.CONSTRAINT_CATALOG AS \"constraintCatalog\", 
-                 xtable.CONSTRAINT_SCHEMA AS \"constraintSchema\", 
-                 xtable.CONSTRAINT_NAME AS \"constraintName\", 
-                 xcolumn.COLUMN_NAME AS \"columnName\", 
-                 xcolumn.ORDINAL_POSITION AS \"ordinalPosition\" 
-             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS xtable 
-             INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE xcolumn 
-                     ON xtable.CONSTRAINT_SCHEMA = xcolumn.CONSTRAINT_SCHEMA 
+                 xtable.CONSTRAINT_CATALOG AS \"constraintCatalog\",
+                 xtable.CONSTRAINT_SCHEMA AS \"constraintSchema\",
+                 xtable.CONSTRAINT_NAME AS \"constraintName\",
+                 xcolumn.COLUMN_NAME AS \"columnName\",
+                 xcolumn.ORDINAL_POSITION AS \"ordinalPosition\"
+             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS xtable
+             INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE xcolumn
+                     ON xtable.CONSTRAINT_SCHEMA = xcolumn.CONSTRAINT_SCHEMA
                     AND xtable.TABLE_NAME = xcolumn.TABLE_NAME
-                    AND xtable.CONSTRAINT_NAME = xcolumn.CONSTRAINT_NAME 
+                    AND xtable.CONSTRAINT_NAME = xcolumn.CONSTRAINT_NAME
 	            $catalogClause
-             WHERE xtable.TABLE_NAME = :tableName 
+             WHERE xtable.TABLE_NAME = :tableName
                AND xtable.CONSTRAINT_TYPE = 'PRIMARY KEY'
   	"]
     }
@@ -380,7 +380,7 @@ oo::class create ::tdbc::connection {
 	set catalogClause1 {}
 	set catalogClause2 {}
 	if {[lindex [set count [my allrows -as lists {
-	    SELECT COUNT(*) 
+	    SELECT COUNT(*)
             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
             WHERE CONSTRAINT_CATALOG IS NOT NULL}]] 0 0] != 0} {
 	    set catalogClause1 \
@@ -401,7 +401,7 @@ oo::class create ::tdbc::connection {
 	     SELECT rc.CONSTRAINT_CATALOG AS \"foreignConstraintCatalog\",
                     rc.CONSTRAINT_SCHEMA AS \"foreignConstraintSchema\",
                     rc.CONSTRAINT_NAME AS \"foreignConstraintName\",
-                    rc.UNIQUE_CONSTRAINT_CATALOG 
+                    rc.UNIQUE_CONSTRAINT_CATALOG
                         AS \"primaryConstraintCatalog\",
                     rc.UNIQUE_CONSTRAINT_SCHEMA AS \"primaryConstraintSchema\",
                     rc.UNIQUE_CONSTRAINT_NAME AS \"primaryConstraintName\",
@@ -486,7 +486,7 @@ oo::class create ::tdbc::connection {
 
     # Derived classes are expected to implement the 'begintransaction',
     # 'commit', and 'rollback' methods.
-	
+
     # Derived classes are expected to implement 'tables' and 'columns' method.
 
 }
@@ -525,7 +525,7 @@ oo::class create tdbc::statement {
     # is wrapped in an [uplevel] call because the substitution proces
     # may need to access variables in the caller's scope.
 
-    # WORKAROUND: Take out the '0 &&' from the next line when 
+    # WORKAROUND: Take out the '0 &&' from the next line when
     # Bug 2649975 is fixed
     if {0 && [package vsatisfies [package provide Tcl] 8.6]} {
 	method execute args {
@@ -579,7 +579,7 @@ oo::class create tdbc::statement {
 
 	set args [::tdbc::ParseConvenienceArgs $args[set args {}] opts]
 
-	# Check postitional parameters 
+	# Check postitional parameters
 
 	set cmd [list [self] execute]
 	if {[llength $args] == 0} {
@@ -637,7 +637,7 @@ oo::class create tdbc::statement {
 	# Grab keyword-value parameters
 
 	set args [::tdbc::ParseConvenienceArgs $args[set args {}] opts]
-	
+
 	# Check positional parameters
 
 	set cmd [list [self] execute]
@@ -747,7 +747,7 @@ oo::class create tdbc::resultset {
 	    if {![my nextresults]} break
 	}
 	return $results
-	    
+
     }
 
     # The 'foreach' method runs a script on each row from a result set.
@@ -771,12 +771,12 @@ oo::class create tdbc::resultset {
 	}
 
 	# Do -columnsvariable if requested
-	    
+
 	if {[dict exists $opts -columnsvariable]} {
 	    upvar 1 [dict get $opts -columnsvariable] columns
 	}
 
-	# Iterate over the groups of results 
+	# Iterate over the groups of results
 	while {1} {
 
 	    # Export column names to caller
@@ -819,12 +819,12 @@ oo::class create tdbc::resultset {
 	    if {[info exists broken] || ![my nextresults]} {
 		break
 	    }
-	}	
+	}
 
 	return
     }
 
-    
+
     # The 'nextrow' method retrieves a row in the form of either
     # a list or a dictionary.
 
@@ -834,9 +834,9 @@ oo::class create tdbc::resultset {
 
 	set opts [dict create -as dicts]
 	set i 0
-    
+
 	# Munch keyword options off the front of the command arguments
-	
+
 	foreach {key value} $args {
 	    if {[string index $key 0] eq {-}} {
 		switch -regexp -- $key {
@@ -900,7 +900,7 @@ oo::class create tdbc::resultset {
 
     # Derived classes are expected to implement the following methods:
 
-    # constructor and destructor.  
+    # constructor and destructor.
     #        Constructor accepts a statement and an optional
     #        a dictionary of substituted parameters  and
     #        executes the statement against the database. If

@@ -77,8 +77,8 @@ that is expected to contain one or more SQL statements. It returns a
 list of substrings; concatenating these substrings together will yield
 the original string. Each substring is one of the following:
 .IP [1]
-A bound variable, which begins with one of the 
-characters '\fB:\fR', '\fB@\fR', or '\fB$\fR'. The 
+A bound variable, which begins with one of the
+characters '\fB:\fR', '\fB@\fR', or '\fB$\fR'. The
 remainder of the string is the variable
 name and will consist of alphanumeric characters and underscores. (The
 leading character will be be non-numeric.)

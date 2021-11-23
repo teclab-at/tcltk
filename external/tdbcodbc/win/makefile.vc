@@ -92,6 +92,8 @@ $(OUT_DIR)\pkgIndex.tcl: $(ROOT)\pkgIndex.tcl.in
 @PACKAGE_VERSION@     $(DOTVERSION)
 @TCL_VERSION_REQ@     $(TCL_VERSION_REQ)
 @PKG_LIB_FILE@        $(PRJLIBNAME)
+@PKG_LIB_FILE8@       $(PRJLIBNAME8)
+@PKG_LIB_FILE9@       $(PRJLIBNAME9)
 <<
 
 test: test-jet test-sqlserver test-sqlite

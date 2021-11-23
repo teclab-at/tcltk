@@ -65,6 +65,8 @@ $(OUT_DIR)\pkgIndex.tcl: $(ROOT)\pkgIndex.tcl.in
 @TCL_VERSION_DESIRED@ $(TCL_VERSION_DESIRED)
 @TCLOO_VERSION_REQ@   $(TCLOO_VERSION_REQ)
 @PKG_LIB_FILE@        $(PRJLIBNAME)
+@PKG_LIB_FILE8@       $(PRJLIBNAME8)
+@PKG_LIB_FILE9@       $(PRJLIBNAME9)
 @TCL_VERSION@         $(TCL_DOTVERSION)
 <<
 
@@ -76,6 +78,8 @@ $(OUT_DIR)\tdbcConfig.sh: $(ROOT)\tdbcConfig.sh.in
 	nmakehlp -s << $** > $@
 @PACKAGE_VERSION@            $(DOTVERSION)
 @PKG_LIB_FILE@               $(PRJLIBNAME)
+@PKG_LIB_FILE8@              $(PRJLIBNAME8)
+@PKG_LIB_FILE9@              $(PRJLIBNAME9)
 @tdbc_LIB_SPEC@              $(LIB_INSTALL_DIR)\$(PRJLIBNAME)
 @PKG_STUB_LIB_FILE@          $(PRJSTUBLIBNAME)
 @tdbc_BUILD_STUB_LIB_SPEC@   $(PRJSTUBLIB)

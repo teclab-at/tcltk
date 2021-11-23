@@ -72,7 +72,7 @@ The \fBtdbc::mapSqlState\fR command accepts a string that is expected
 to be a five-character 'SQL state' as returned from a SQL database when
 an error occurs. It examines the first two characters of the string,
 and returns an error class as a human- and machine-readable name (for example,
-\fBFEATURE_NOT_SUPPORTED\fR, \fBDATA_EXCEPTION\fR or 
+\fBFEATURE_NOT_SUPPORTED\fR, \fBDATA_EXCEPTION\fR or
 \fBINVALID_CURSOR_STATE\fR).
 .PP
 The TDBC specification requires database drivers to return a description
@@ -80,7 +80,7 @@ of an error in the error code when an error occurs. The description is
 a string that has at least four elements: "\fBTDBC\fR \fIerrorClass\fR
 \fIsqlstate\fR \fIdriverName\fR \fIdetails...\fR". The \fBtdbc::mapSqlState\fR
 command gives a convenient way for a TDBC driver to generate the
-\fIerrorClass\fR element given the SQL state returned from a database. 
+\fIerrorClass\fR element given the SQL state returned from a database.
 .SH "SEE ALSO"
 tdbc(n), tdbc::tokenize, tdbc::connection(n), tdbc::statement(n), tdbc::resultset(n)
 .SH "KEYWORDS"

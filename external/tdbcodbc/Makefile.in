@@ -58,6 +58,8 @@ PKG_HEADERS	= @PKG_HEADERS@
 #========================================================================
 
 PKG_LIB_FILE	= @PKG_LIB_FILE@
+PKG_LIB_FILE8	= @PKG_LIB_FILE8@
+PKG_LIB_FILE9	= @PKG_LIB_FILE9@
 PKG_STUB_LIB_FILE = @PKG_STUB_LIB_FILE@
 
 lib_BINARIES	= $(PKG_LIB_FILE)
@@ -73,6 +75,7 @@ bindir		= @bindir@
 libdir		= @libdir@
 includedir	= @includedir@
 datarootdir	= @datarootdir@
+runstatedir	= @runstatedir@
 datadir		= @datadir@
 mandir		= @mandir@
 
@@ -162,17 +165,20 @@ PKG_CFLAGS	= @PKG_CFLAGS@
 # you do not compile with a similar machine setup as the Tcl core was
 # compiled with.
 #DEFS		= $(TCL_DEFS) @DEFS@ $(PKG_CFLAGS)
-DEFS		= @DEFS@ $(PKG_CFLAGS)
+DEFS		= @DEFS@ $(PKG_CFLAGS) -DTCL_NO_DEPRECATED=1
 
 # Move pkgIndex.tcl to 'BINARIES' var if it is generated in the Makefile
-CONFIG_CLEAN_FILES = Makefile pkgIndex.tcl tdbcConfig.sh
+CONFIG_CLEAN_FILES = Makefile pkgIndex.tcl
 CLEANFILES	= @CLEANFILES@
 
 CPPFLAGS	= @CPPFLAGS@
 LIBS		= @PKG_LIBS@ @LIBS@
 AR		= @AR@
 CFLAGS		= @CFLAGS@
-COMPILE		= $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LDFLAGS		= @LDFLAGS@
+LDFLAGS_DEFAULT			= @LDFLAGS_DEFAULT@
+COMPILE		= $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) \
+			  $(CFLAGS_DEFAULT) $(CFLAGS_WARNING) $(SHLIB_CFLAGS) $(CFLAGS)
 
 GDB		= gdb
 VALGRIND	= valgrind
@@ -224,11 +230,11 @@ install-binaries: binaries install-lib-binaries install-bin-binaries
 #========================================================================
 
 install-libraries: libraries
-	@$(INSTALL_DATA_DIR) $(DESTDIR)$(includedir)
+	@$(INSTALL_DATA_DIR) "$(DESTDIR)$(includedir)"
 	@echo "Installing header files in $(DESTDIR)$(includedir)"
 	@list='$(PKG_HEADERS)'; for i in $$list; do \
 	    echo "Installing $(srcdir)/$$i" ; \
-	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(includedir) ; \
+	    $(INSTALL_DATA) $(srcdir)/$$i "$(DESTDIR)$(includedir)" ; \
 	done;
 
 #========================================================================
@@ -237,11 +243,11 @@ install-libraries: libraries
 #========================================================================
 
 install-doc: doc
-	@$(INSTALL_DATA_DIR) $(DESTDIR)$(mandir)/mann
+	@$(INSTALL_DATA_DIR) "$(DESTDIR)$(mandir)/mann"
 	@echo "Installing documentation in $(DESTDIR)$(mandir)"
 	@list='$(srcdir)/doc/*.n'; for i in $$list; do \
 	    echo "Installing $$i"; \
-	    $(INSTALL_DATA) $$i $(DESTDIR)$(mandir)/mann ; \
+	    $(INSTALL_DATA) $$i "$(DESTDIR)$(mandir)/mann" ; \
 	done
 
 test: test-jet test-sqlserver test-sqlite
@@ -251,21 +257,21 @@ test-jet: binaries libraries
 	TDBCODBC_TEST_TYPE=jet \
 		$(TCLSH) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TESTFLAGS) \
 		-load "package ifneeded tdbc::odbc $(PACKAGE_VERSION) \
-			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME)]"
+			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` [string totitle $(PACKAGE_NAME)]]"
 
 test-sqlserver: binaries libraries
 	@echo testing tdbcodbc against SQL Server
 	TDBCODBC_TEST_TYPE=sqlserver \
 		$(TCLSH) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TESTFLAGS) \
 		-load "package ifneeded tdbc::odbc ${PACKAGE_VERSION} \
-			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME)]"
+			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` [string totitle $(PACKAGE_NAME)]]"
 
 test-sqlite: binaries libraries
 	@echo testing tdbcodbc against SQLite
 	TDBCODBC_TEST_TYPE=sqlite \
 		$(TCLSH) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TESTFLAGS) \
 		-load "package ifneeded tdbc::odbc ${PACKAGE_VERSION} \
-			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME)]"
+			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` [string totitle $(PACKAGE_NAME)]]"
 
 valgrind-sqlite: binaries libraries
 	TDBCODBC_TEST_TYPE=sqlite \
@@ -274,7 +280,7 @@ valgrind-sqlite: binaries libraries
 	$(VALGRIND) $(VALGRINDARGS) \
 	$(TCLSH_PROG) `@CYGPATH@ $(srcdir)/tests/all.tcl` $(TESTFLAGS) \
 		-load "package ifneeded tdbc::odbc ${PACKAGE_VERSION} \
-			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` $(PACKAGE_NAME)]"
+			[list source `@CYGPATH@ $(srcdir)/library/tdbcodbc.tcl`]\;[list load `@CYGPATH@ $(PKG_LIB_FILE)` [string totitle $(PACKAGE_NAME)]]"
 
 shell: binaries libraries
 	@$(TCLSH) $(SCRIPT)
@@ -433,17 +439,17 @@ distclean: clean
 #========================================================================
 
 install-lib-binaries: binaries
-	@$(INSTALL_DATA_DIR) $(DESTDIR)$(pkglibdir)
+	@$(INSTALL_DATA_DIR) "$(DESTDIR)$(pkglibdir)"
 	@list='$(lib_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    echo " $(INSTALL_LIBRARY) $$p $(DESTDIR)$(pkglibdir)/$$p"; \
-	    $(INSTALL_LIBRARY) $$p $(DESTDIR)$(pkglibdir)/$$p; \
+	    $(INSTALL_LIBRARY) $$p "$(DESTDIR)$(pkglibdir)/$$p"; \
 	    ext=`echo $$p|sed -e "s/.*\.//"`; \
 	    if test "x$$ext" = "xdll"; then \
 		lib=`basename $$p|sed -e 's/.[^.]*$$//'`.lib; \
 		if test -f $$lib; then \
 		    echo " $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib"; \
-	            $(INSTALL_DATA) $$lib $(DESTDIR)$(pkglibdir)/$$lib; \
+	            $(INSTALL_DATA) $$lib "$(DESTDIR)$(pkglibdir)/$$lib"; \
 		fi; \
 	    fi; \
 	  fi; \
@@ -452,12 +458,12 @@ install-lib-binaries: binaries
 	  if test -f $(srcdir)/$$p; then \
 	    destp=`basename $$p`; \
 	    echo " Install $$destp $(DESTDIR)$(pkglibdir)/$$destp"; \
-	    $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(pkglibdir)/$$destp; \
+	    $(INSTALL_DATA) $(srcdir)/$$p "$(DESTDIR)$(pkglibdir)/$$destp"; \
 	  fi; \
 	done
 	@if test "x$(SHARED_BUILD)" = "x1"; then \
 	    echo " Install pkgIndex.tcl $(DESTDIR)$(pkglibdir)"; \
-	    $(INSTALL_DATA) pkgIndex.tcl $(DESTDIR)$(pkglibdir); \
+	    $(INSTALL_DATA) pkgIndex.tcl "$(DESTDIR)$(pkglibdir)"; \
 	fi
 
 #========================================================================
@@ -470,11 +476,11 @@ install-lib-binaries: binaries
 #========================================================================
 
 install-bin-binaries: binaries
-	@$(INSTALL_DATA_DIR) $(DESTDIR)$(bindir)
+	@$(INSTALL_DATA_DIR) "$(DESTDIR)$(bindir)"
 	@list='$(bin_BINARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    echo " $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p"; \
-	    $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
+	    $(INSTALL_PROGRAM) $$p "$(DESTDIR)$(bindir)/$$p"; \
 	  fi; \
 	done
 
@@ -484,14 +490,14 @@ Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 
 uninstall-binaries:
 	list='$(lib_BINARIES)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
+	  rm -f "$(DESTDIR)$(pkglibdir)/$$p"; \
 	done
 	list='$(PKG_TCL_SOURCES)'; for p in $$list; do \
 	  p=`basename $$p`; \
-	  rm -f $(DESTDIR)$(pkglibdir)/$$p; \
+	  rm -f "$(DESTDIR)$(pkglibdir)/$$p"; \
 	done
 	list='$(bin_BINARIES)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(bindir)/$$p; \
+	  rm -f "$(DESTDIR)$(bindir)/$$p"; \
 	done
 
 .PHONY: all binaries clean depend distclean doc install libraries test

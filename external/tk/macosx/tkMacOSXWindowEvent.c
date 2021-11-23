@@ -162,6 +162,9 @@ extern NSString *NSWindowDidOrderOffScreenNotification;
 #ifdef TK_MAC_DEBUG_NOTIFICATIONS
     TKLog(@"-[%@(%p) %s] %@", [self class], self, _cmd, notification);
 #endif
+    if (![[notification object] respondsToSelector: @selector (tkLayoutChanged)]) {
+	return;
+    }
     [(TKWindow *)[notification object] tkLayoutChanged];
 }
 
@@ -170,6 +173,9 @@ extern NSString *NSWindowDidOrderOffScreenNotification;
 #ifdef TK_MAC_DEBUG_NOTIFICATIONS
     TKLog(@"-[%@(%p) %s] %@", [self class], self, _cmd, notification);
 #endif
+    if (![[notification object] respondsToSelector: @selector (tkLayoutChanged)]) {
+	return;
+    }
     [(TKWindow *)[notification object] tkLayoutChanged];
 }
 
@@ -182,6 +188,7 @@ extern NSString *NSWindowDidOrderOffScreenNotification;
     TkWindow *winPtr = TkMacOSXGetTkWindow(w);
 
     if (winPtr) {
+	winPtr->wmInfoPtr->hints.initial_state = IconicState;
 	Tk_UnmapWindow((Tk_Window)winPtr);
     }
 }
@@ -330,7 +337,7 @@ static void RefocusGrabWindow(void *data) {
 	    continue;
 	}
 	if (winPtr->wmInfoPtr->hints.initial_state == WithdrawnState) {
-	    [win orderOut:nil];
+	    [win orderOut:NSApp];
 	}
 	if (winPtr->dispPtr->grabWinPtr == winPtr) {
 	    Tcl_DoWhenIdle(RefocusGrabWindow, winPtr);

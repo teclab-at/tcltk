@@ -3959,8 +3959,8 @@ OldMathFuncProc(
 	result = Tcl_GetDoubleFromObj(NULL, valuePtr, &d);
 #ifdef ACCEPT_NAN
 	if (result != TCL_OK) {
-	    const Tcl_ObjIntRep *irPtr
-		    = TclFetchIntRep(valuePtr, &tclDoubleType);
+	    const Tcl_ObjInternalRep *irPtr
+		    = TclFetchInternalRep(valuePtr, &tclDoubleType);
 
 	    if (irPtr) {
 		d = irPtr->doubleValue;
@@ -4866,6 +4866,7 @@ NRCommand(
     int result)
 {
     Interp *iPtr = (Interp *) interp;
+    Tcl_Obj *listPtr;
 
     iPtr->numLevels--;
 
@@ -4874,7 +4875,10 @@ NRCommand(
       */
 
     if (data[1] && (data[1] != INT2PTR(1))) {
-        TclNRAddCallback(interp, TclNRTailcallEval, data[1], NULL, NULL, NULL);
+	listPtr = (Tcl_Obj *)data[1];
+	data[1] = NULL;
+
+	TclNRAddCallback(interp, TclNRTailcallEval, listPtr, NULL, NULL, NULL);
     }
 
     /* OPT ??
@@ -7533,7 +7537,7 @@ ExprCeilFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[1], &d);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    Tcl_SetObjResult(interp, objv[1]);
@@ -7573,7 +7577,7 @@ ExprFloorFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[1], &d);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    Tcl_SetObjResult(interp, objv[1]);
@@ -7719,7 +7723,7 @@ ExprSqrtFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[1], &d);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    Tcl_SetObjResult(interp, objv[1]);
@@ -7773,7 +7777,7 @@ ExprUnaryFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[1], &d);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    d = irPtr->doubleValue;
@@ -7837,7 +7841,7 @@ ExprBinaryFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[1], &d1);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    d1 = irPtr->doubleValue;
@@ -7852,7 +7856,7 @@ ExprBinaryFunc(
     code = Tcl_GetDoubleFromObj(interp, objv[2], &d2);
 #ifdef ACCEPT_NAN
     if (code != TCL_OK) {
-	const Tcl_ObjIntRep *irPtr = TclFetchIntRep(objv[1], &tclDoubleType);
+	const Tcl_ObjInternalRep *irPtr = TclFetchInternalRep(objv[1], &tclDoubleType);
 
 	if (irPtr) {
 	    d2 = irPtr->doubleValue;
@@ -8013,7 +8017,7 @@ ExprDoubleFunc(
     }
     if (Tcl_GetDoubleFromObj(interp, objv[1], &dResult) != TCL_OK) {
 #ifdef ACCEPT_NAN
-	if (TclHasIntRep(objv[1], &tclDoubleType)) {
+	if (TclHasInternalRep(objv[1], &tclDoubleType)) {
 	    Tcl_SetObjResult(interp, objv[1]);
 	    return TCL_OK;
 	}
@@ -9449,6 +9453,7 @@ TclNRYieldToObjCmd(
 
     iPtr->execEnvPtr = corPtr->callerEEPtr;
     TclSetTailcall(interp, listPtr);
+    corPtr->yieldPtr = listPtr;
     iPtr->execEnvPtr = corPtr->eePtr;
 
     return TclNRYieldObjCmd(INT2PTR(CORO_ACTIVATE_YIELDM), interp, 1, objv);
@@ -9646,6 +9651,22 @@ TclNRCoroutineActivateCallback(
          */
 
         if (corPtr->stackLevel != stackLevel) {
+	    NRE_callback *runPtr;
+
+	    iPtr->execEnvPtr = corPtr->callerEEPtr;
+	    if (corPtr->yieldPtr) {
+		for (runPtr = TOP_CB(interp); runPtr; runPtr = runPtr->nextPtr) {
+		    if (runPtr->data[1] == corPtr->yieldPtr) {
+			runPtr->data[1] = NULL;
+			Tcl_DecrRefCount(corPtr->yieldPtr);
+			corPtr->yieldPtr = NULL;
+			break;
+		    }
+		}
+	    }
+	    iPtr->execEnvPtr = corPtr->eePtr;
+
+
             Tcl_SetObjResult(interp, Tcl_NewStringObj(
                     "cannot yield: C stack busy", -1));
             Tcl_SetErrorCode(interp, "TCL", "COROUTINE", "CANT_YIELD",
@@ -9661,6 +9682,7 @@ TclNRCoroutineActivateCallback(
             Tcl_Panic("Yield received an option which is not implemented");
         }
 
+	corPtr->yieldPtr = NULL;
         corPtr->stackLevel = NULL;
 
         numLevels = iPtr->numLevels;

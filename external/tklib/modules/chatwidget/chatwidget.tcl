@@ -11,13 +11,12 @@
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 #
-# RCS: @(#) $Id: chatwidget.tcl,v 1.4 2008/06/20 22:53:54 patthoyts Exp $
 
 package require Tcl 8.5
 package require Tk 8.5
 
 namespace eval chatwidget {
-    variable version 1.1.2
+    variable version 1.1.4
 
     namespace export chatwidget
 
@@ -32,6 +31,9 @@ namespace eval chatwidget {
             [font configure ChatwidgetFont] -weight bold
         eval [list font create ChatwidgetItalicFont] \
             [font configure ChatwidgetFont] -slant italic
+        eval [list font create ChatwidgetTopicFont] \
+            [font configure ChatwidgetFont] \
+            -size [expr {[font configure ChatwidgetFont -size] - 0}]
     }
 }
 
@@ -146,11 +148,34 @@ proc chatwidget::Topic {self cmd args} {
     switch -exact -- $cmd {
         show { grid $self.topic -row 0 -column 0 -sticky new }
         hide { grid forget $self.topic }
-        set  { set state(topic) [lindex $args 0] }
+        set  {
+            set state(topic) [lindex $args 0]
+            $self.topic.text configure -state normal
+            $self.topic.text delete 1.0 end
+            $self.topic.text insert end $state(topic)
+            $self.topic.text configure -state disabled
+            bind $self.topic.text <Map> [list [namespace origin TopicUpdate] $self]
+        }
         default {
             return -code error "bad option \"$cmd\":\
                 must be show, hide or set"
         }
+    }
+}
+
+# Set the topic widget to 2 lines with an optional scrollbar if the text
+# will require more than a single line of display.
+proc chatwidget::TopicUpdate {self} {
+    bind $self.topic.text <Map> {}
+    set lines [$self.topic.text count -displaylines 1.0 end]
+    if {$lines < 2} {
+        $self.topic.text configure -height 1
+    } else {
+        $self.topic.text configure -height 2
+        ttk::scrollbar $self.topic.vs -command [list $self.topic.text yview]
+        $self.topic.text configure -yscrollcommand \
+            [list [namespace origin scroll_set] $self.topic.vs $self 0]
+        grid $self.topic.vs -row 0 -column 2 -sticky new -pady {2 0} -padx 1
     }
 }
 
@@ -285,7 +310,8 @@ proc chatwidget::Name {self cmd args} {
             }
             set nick [lindex $args 0]
             if {[set ndx [lsearch -exact -index 0 $state(names) $nick]] == -1} {
-                array set opts {-group {} -colour black}
+                set fg [$state(chat_widget) cget -foreground]
+                array set opts [list -group {} -color $fg]
                 array set opts [lrange $args 1 end]
                 lappend state(names) [linsert [array get opts] 0 $nick]
             } else {
@@ -475,7 +501,8 @@ proc chatwidget::Create {self} {
     # Create a topic/subject header
     set topic [ttk::frame $self.topic]
     ttk::label $topic.label -anchor w -text Topic
-    ttk::entry $topic.text -state disabled -textvariable [set State](topic)
+    text $topic.text -state disabled -font ChatwidgetTopicFont
+    $topic.text configure -state disabled -height 1 -wrap word
     grid $topic.label $topic.text -sticky new -pady {2 0} -padx 1
     Grid $topic 0 1
 
@@ -521,6 +548,8 @@ proc chatwidget::Create {self} {
     # Create the entry widget
     set entry [ttk::frame $outer.entry -style ChatwidgetFrame]
     text $entry.text -borderwidth 0 -relief flat -font ChatwidgetFont
+    $entry.text configure -insertbackground [$entry.text cget -foreground]
+
     ttk::scrollbar $entry.vs -command [list $entry.text yview]
     $entry.text configure -height 1 \
         -yscrollcommand [list [namespace origin scroll_set] $entry.vs $outer 0]
@@ -553,8 +582,10 @@ proc chatwidget::Create {self} {
         }
     }
 
-    $names.text tag configure SUBTITLE \
-        -background grey80 -font ChatwidgetBoldFont
+    # Use inverted colors for the subtitles.
+    $names.text tag configure SUBTITLE -font ChatwidgetBoldFont \
+        -foreground [$names.text cget -background] \
+        -background [$names.text cget -foreground]
     $chat tag configure NICK        -font ChatwidgetBoldFont
     $chat tag configure TYPE-system -font ChatwidgetItalicFont
     $chat tag configure URL         -underline 1
@@ -582,7 +613,7 @@ proc chatwidget::Self {widget} {
 
 # Set initial position of sash
 proc chatwidget::PaneMap {w pane offset} {
-    bind $pane <Map> {}
+    bind $w <Map> {}
     if {[llength [$pane panes]] > 1} {
         if {$offset < 0} {
             if {[$pane cget -orient] eq "horizontal"} {
@@ -714,13 +745,14 @@ proc chatwidget::NickcompleteCleanup {self} {
 # Update the widget chatstate (one of active, composing, paused, inactive, gone)
 # These are from XEP-0085 but seem likey useful in many chat-type environments.
 # Note: this state is _per-widget_. This is not the same as [tk inactive]
-# active = got focus and recently active
+#   active = got focus and recently active
 #   composing = typing
 #   paused = 5 secs non typing
-# inactive = no activity for 30 seconds
-# gone = no activity for 2 minutes or closed the window
+#   inactive = no activity for 30 seconds
+#   gone = no activity for 2 minutes or closed the window
 proc chatwidget::Chatstate {self what} {
     upvar #0 [namespace current]::$self state
+    if {![info exists state]} { return }
     after cancel $state(chatstatetimer)
     switch -exact -- $what {
         composing - active {

@@ -91,7 +91,7 @@ Every database driver for TDBC (Tcl DataBase Connectivity) implements
 a \fIstatement\fR object that represents a SQL statement in a
 database. Instances of this object are created by executing the
 \fBprepare\fR or \fBpreparecall\fR object command on a database
-connection. 
+connection.
 .PP
 The \fBprepare\fR object command against the connection
 accepts arbitrary SQL code to be
@@ -104,7 +104,7 @@ quotes, nor in a comment introduced by \fB--\fR, it becomes a value
 that is substituted when the statement is executed. A bound variable
 becomes a single value (string or numeric) in the resulting
 statement. \fIDrivers are responsible for ensuring that the mechanism
-for binding variables prevents SQL injection.\fR 
+for binding variables prevents SQL injection.\fR
 .PP
 The \fBpreparecall\fR object command against the connection accepts a
 stylized statement in the form:
@@ -138,7 +138,7 @@ statement. Only stored procedure calls will have \fBout\fR or
 \fBinout\fR parameters.
 .IP \fBtype\fR
 Contains the data type of the column, and will generally be chosen
-from the set, 
+from the set,
 \fBbigint\fR, \fBbinary\fR, \fBbit\fR, \fBchar\fR, \fBdate\fR,
 \fBdecimal\fR, \fBdouble\fR, \fBfloat\fR, \fBinteger\fR,
 \fBlongvarbinary\fR, \fBlongvarchar\fR, \fBnumeric\fR, \fBreal\fR,
@@ -187,9 +187,9 @@ The \fBallrows\fR object command executes the statement as with the
 optional \fIdict\fR parameter giving bind variables. After executing
 the statement,
 it uses the \fIallrows\fR object command on the result set (see
-\fBtdbc::resultset\fR) to construct a list of the results. Finally, 
+\fBtdbc::resultset\fR) to construct a list of the results. Finally,
 the result set is closed. The return value is the list of
-results. 
+results.
 .PP
 The \fBforeach\fR object command executes the statement as with the
 \fBexecute\fR object command, accepting an
@@ -199,7 +199,7 @@ it uses the \fIforeach\fR object command on the result set (see
 \fBtdbc::resultset\fR) to evaluate the given \fIscript\fR for each row of
 the results. Finally, the result set is closed, even
 if the given \fIscript\fR results in a \fBreturn\fR, an error, or
-an unusual return code. 
+an unusual return code.
 .PP
 The \fBclose\fR object command removes a statement and any result sets
 that it has created. All system resources associated with the objects

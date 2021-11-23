@@ -1,6 +1,6 @@
 README: tdbcodbc
 
-    This is the 1.1.2 source distribution of the bridge between Tcl
+    This is the 1.1.3 source distribution of the bridge between Tcl
     Database Connectivity (TDBC) and Open Database Connectivity
     (ODBC), a database-neutral API layer available on all Windows
     systems and many others.. TDBC and its drivers are available from

@@ -10,7 +10,7 @@
 # (c) 2002-2003 David Welton
 # (c) 2003-2008 Pat Thoyts
 # (c) 2005      Benjamin Riefenstahl
-# (c) 2013      PoorYorick
+# (c) 2013-2021 Poor Yorick
 #
 #
 # See the file "license.terms" for information on usage and redistribution
@@ -23,7 +23,7 @@
 # new string features and inline scan are used, requiring 8.3.
 package require Tcl 8.5
 
-package provide mime 1.6.3
+package provide mime 1.7.0
 package require tcl::chan::memchan
 
 
@@ -79,7 +79,7 @@ if {[catch {package require Trf 2.0}]} {
 #     params: dictionary (keys are lower-case)
 #     encoding: transfer encoding
 #     version: MIME-version
-#     header: dicttionary (keys are lower-case)
+#     header: dictionary (keys are lower-case)
 #     lowerL: list of header keys, lower-case
 #     mixedL: list of header keys, mixed-case
 #     value: either "file", "parts", or "string"
@@ -1557,7 +1557,6 @@ proc ::mime::setheader {token key value args} {
     }
 
     set state(header) [array get header]
-
     return $result
 }
 
@@ -1878,6 +1877,8 @@ proc ::mime::copymessageaux {token channel} {
     upvar 0 $token state
 
     array set header $state(header)
+
+    set boundary {}
 
     set result {}
     foreach {mixed value} [getheader $token] {

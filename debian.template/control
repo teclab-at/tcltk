@@ -1,6 +1,6 @@
 Package: tcltk87
 Version: %deb_version%
-Release: 8
+Release: 10
 Pre-Depends: chrpath, awk, sed, libpq5
 Depends: libfftw3-3
 Maintainer: (c) 2020 ATOS, Thomas Perschak

@@ -287,6 +287,12 @@ test encoding-11.8 {encoding: extended Unicode UTF-16} {
 test encoding-11.9 {encoding: extended Unicode UTF-16} {
     viewable [encoding convertto utf-16be 😹]
 } {Ø=Þ9 (\u00D8=\u00DE9)}
+test encoding-11.10 {encoding: extended Unicode UTF-32} {
+    viewable [encoding convertto utf-32le 😹]
+} "9\xF6\x01\x00 (9\\u00F6\\u0001\\u0000)"
+test encoding-11.11 {encoding: extended Unicode UTF-32} {
+    viewable [encoding convertto utf-32be 😹]
+} "\x00\x01\xF69 (\\u0000\\u0001\\u00F69)"
 # OpenEncodingFile is fully tested by the rest of the tests in this file.
 
 test encoding-12.1 {LoadTableEncoding: normal encoding} {
@@ -429,6 +435,21 @@ test encoding-15.21 {UtfToUtfProc CESU-8 noncharacter} {
     binary scan $y H* z
     list [string length $y] $z
 } {3 efbfbf}
+test encoding-15.22 {UtfToUtfProc CESU-8 bug [048dd20b4171c8da]} {
+    set y [encoding convertto cesu-8 \x80]
+    binary scan $y H* z
+    list [string length $y] $z
+} {2 c280}
+test encoding-15.23 {UtfToUtfProc CESU-8 bug [048dd20b4171c8da]} {
+    set y [encoding convertto cesu-8 \u100]
+    binary scan $y H* z
+    list [string length $y] $z
+} {2 c480}
+test encoding-15.24 {UtfToUtfProc CESU-8 bug [048dd20b4171c8da]} {
+    set y [encoding convertto cesu-8 \u3FF]
+    binary scan $y H* z
+    list [string length $y] $z
+} {2 cfbf}
 
 test encoding-16.1 {Utf16ToUtfProc} -body {
     set val [encoding convertfrom utf-16 NN]
@@ -446,10 +467,18 @@ test encoding-16.4 {Ucs2ToUtfProc} -body {
     set val [encoding convertfrom ucs-2 NN]
     list $val [format %x [scan $val %c]]
 } -result "乎 4e4e"
-test encoding-16.4 {Ucs2ToUtfProc} -body {
+test encoding-16.5 {Ucs2ToUtfProc} -body {
     set val [encoding convertfrom ucs-2 "\xD8\xD8\xDC\xDC"]
     list $val [format %x [scan $val %c]]
 } -result "\U460DC 460dc"
+test encoding-16.6 {Utf32ToUtfProc} -body {
+    set val [encoding convertfrom utf-32le NN\0\0]
+    list $val [format %x [scan $val %c]]
+} -result "乎 4e4e"
+test encoding-16.7 {Utf32ToUtfProc} -body {
+    set val [encoding convertfrom utf-32be \0\0NN]
+    list $val [format %x [scan $val %c]]
+} -result "乎 4e4e"
 
 test encoding-17.1 {UtfToUtf16Proc} -body {
     encoding convertto utf-16 "\U460DC"
@@ -463,6 +492,12 @@ test encoding-17.3 {UtfToUtf16Proc} -body {
 test encoding-17.4 {UtfToUtf16Proc} -body {
     encoding convertto utf-16le "\uD8D8"
 } -result "\xFD\xFF"
+test encoding-17.5 {UtfToUtf16Proc} -body {
+    encoding convertto utf-32le "\U460DC"
+} -result "\xDC\x60\x04\x00"
+test encoding-17.6 {UtfToUtf16Proc} -body {
+    encoding convertto utf-32be "\U460DC"
+} -result "\x00\x04\x60\xDC"
 
 test encoding-18.1 {TableToUtfProc} {
 } {}
@@ -762,7 +797,7 @@ test encoding-28.0 {all encodings load} -body {
 		llength $name
 	}
 	return $count
-} -result [expr {[info exists ::tcl_precision] ? 87 : 86}]
+} -result [expr {[info exists ::tcl_precision] ? 92 : 91}]
 
 runtests
 

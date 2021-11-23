@@ -83,7 +83,7 @@ foreach elem $fmtList {
 		    set val [format "#%02x%02x%02x" $col $col $col]
                     lappend imgLine $val
                     if { $fmt eq "xbm" } {
-                        $ph put -to [expr $x-1] [expr $y-1] $val
+                        $ph put $val -to [expr $x-1] [expr $y-1]
                         $ph transparency set [expr $x-1] [expr $y-1] [expr $col]
                     }
 		}

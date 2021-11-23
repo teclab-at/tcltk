@@ -15,7 +15,7 @@ set distdir d:/tmp/dist/tdbc${ver}-win32
 file mkdir $distdir
 set f [open [file join $distdir INSTALL.tcl] w]
 puts $f {
-    package require Tcl 8.6
+    package require Tcl 8.6-
     if {![catch {
 	package require Tk
     }]} {

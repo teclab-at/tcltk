@@ -125,7 +125,7 @@ The return value is a
 newly-created Tcl command that represents the statement. See
 \fBtdbc::statement\fR for the interface accepted by a statement.
 .PP
-The \fBstatements\fR object command returns a list of statements 
+The \fBstatements\fR object command returns a list of statements
 that have been created by \fBprepare\fR and \fBpreparecall\fR
 statements against the given connection and have not yet been closed.
 .PP
@@ -151,7 +151,7 @@ contain at least the following keys and values (and may contain others
 whose usage is determined by a specific database driver).
 .IP \fBtype\fR
 Contains the data type of the column, and will generally be chosen
-from the set, 
+from the set,
 \fBbigint\fR, \fBbinary\fR, \fBbit\fR, \fBchar\fR, \fBdate\fR,
 \fBdecimal\fR, \fBdouble\fR, \fBfloat\fR, \fBinteger\fR,
 \fBlongvarbinary\fR, \fBlongvarchar\fR, \fBnumeric\fR, \fBreal\fR,
@@ -204,7 +204,7 @@ particular table (\fB-foreign\fR \fItableName\fR), the keys that
 refer to a particular table (\fB-primary\fR \fItableName\fR), or both.
 At least one of \fB-primary\fR and \fB-foreign\fR should be specified,
 although some drivers will enumerate all foreign keys in the current
-catalog if both options are omitted. The result of the \fBforeignkeys\fR 
+catalog if both options are omitted. The result of the \fBforeignkeys\fR
 object command is a list of dictionaries, with one list element per key
 (in a similar format to the
 list returned by \fI$connection\fR \fBallrows -as dicts\fR). The keys of the
@@ -217,20 +217,20 @@ Schema in which the foreign key constraint appears.
 .IP \fBforeignConstraintName\fR
 Name of the foreign key constraint.
 .IP \fBprimaryConstraintCatalog\fR
-Catalog holding the primary key constraint (or unique key constraint) on the 
+Catalog holding the primary key constraint (or unique key constraint) on the
 column to which the foreign key refers.
 .IP \fBprimaryConstraintSchema\fR
-Schema holding the primary key constraint (or unique key constraint) on the 
+Schema holding the primary key constraint (or unique key constraint) on the
 column to which the foreign key refers.
 .IP \fBprimaryConstraintName\fR
-Name of the primary key constraint (or unique key constraint) on the 
+Name of the primary key constraint (or unique key constraint) on the
 column to which the foreign key refers.
 .IP \fBupdateAction\fR
-Action to take when an UPDATE statement invalidates the constraint. 
-The value will be \fBCASCADE\fR, \fBSET DEFAULT\fR, \fBSET NULL\fR, 
+Action to take when an UPDATE statement invalidates the constraint.
+The value will be \fBCASCADE\fR, \fBSET DEFAULT\fR, \fBSET NULL\fR,
 \fBRESTRICT\fR, or \fBNO ACTION\fR.
 .IP \fBdeleteAction\fR
-Action to take when a DELETE statement invalidates the constraint. 
+Action to take when a DELETE statement invalidates the constraint.
 The value will be \fBCASCADE\fR, \fBSET DEFAULT\fR, \fBSET NULL\fR,
 \fBRESTRICT\fR, or \fBNO ACTION\fR.
 .IP \fBprimaryCatalog\fR
@@ -282,7 +282,7 @@ by \fBbreak\fR, \fBcontinue\fR, or \fBreturn\fR, the transaction is
 committed (and any action requested by \fBbreak\fR, \fBcontinue\fR, or
 \fBreturn\fR takes place). If the commit fails for any reason,
 the error in the commit is treated as an error in the \fIscript\fR.
-In the case of an error in \fIscript\fR or in the commit, 
+In the case of an error in \fIscript\fR or in the commit,
 the transaction is rolled back and the error is
 rethrown. Any nonstandard return code from the script
 causes the transaction to be rolled back and then is rethrown.
@@ -294,7 +294,7 @@ optional \fIdictionary\fR parameter giving bind variables. Finally,
 it uses the \fIallrows\fR object command on the result set (see
 \fBtdbc::resultset\fR) to construct a list of the results. Finally, both
 result set and statement are closed. The return value is the list of
-results. 
+results.
 .PP
 The \fBforeach\fR object command prepares a SQL statement (given by
 the \fIsql-code\fR parameter) to execute against the database.
@@ -304,7 +304,7 @@ it uses the \fIforeach\fR object command on the result set (see
 \fBtdbc::resultset\fR) to evaluate the given \fIscript\fR for each row of
 the results. Finally, both result set and statement are closed, even
 if the given \fIscript\fR results in a \fBreturn\fR, an error, or
-an unusual return code. 
+an unusual return code.
 .SH "CONFIGURATION OPTIONS"
 The configuration options accepted when the connection is created and
 on the connection's \fBconfigure\fR object command include the

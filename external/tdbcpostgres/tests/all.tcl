@@ -9,7 +9,7 @@
 #
 # RCS: @(#) $Id: all.tcl,v 1.4 2004/07/04 22:04:20 patthoyts Exp $
 
-package require Tcl 8.6
+package require Tcl 8.6-
 package require tcltest 2.2
 ::tcltest::configure \
     -testdir [file dirname [file normalize [info script]]] \

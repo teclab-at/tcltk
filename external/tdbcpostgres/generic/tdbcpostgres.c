@@ -2910,7 +2910,7 @@ ResultSetConstructor(
  freeParamTables:
     for (i = 0; i < sdata->nParams; ++i) {
 	if (paramNeedsFreeing[i]) {
-	    ckfree(paramValues[i]);
+	    ckfree((void *)paramValues[i]);
 	}
 	if (paramTempObjs[i] != NULL) {
 	    Tcl_DecrRefCount(paramTempObjs[i]);

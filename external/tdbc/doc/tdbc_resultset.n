@@ -92,10 +92,10 @@ package require \fBtdbc::\fR\fIdriver version\fR
 .PP
 Every database driver for TDBC (Tcl DataBase Connectivity) implements
 a \fIresult set\fR object that represents a the results returned from
-executing SQL statement in a database. Instances of this object are created 
+executing SQL statement in a database. Instances of this object are created
 by executing the \fBexecute\fR object command on a statement object.
 .PP
-The \fBcolumns\fR object command returns a list of the names of the columns 
+The \fBcolumns\fR object command returns a list of the names of the columns
 in the result set. The columns will appear in the same order as they appeared
 in the SQL statement that performed the database query. If the SQL statement
 does not return a set of columns (for instance, if it is an INSERT,
@@ -106,15 +106,15 @@ The \fBrowcount\fR object command returns the number of rows in the database
 that were affected by the execution of an INSERT, UPDATE or DELETE statement.
 For a SELECT statement, the row count is unspecified.
 .PP
-The \fBnextlist\fR object command sets the variable given by \fIvarname\fR 
-in the caller's scope to the next row of the results, expressed as a list 
+The \fBnextlist\fR object command sets the variable given by \fIvarname\fR
+in the caller's scope to the next row of the results, expressed as a list
 of column values. NULL values are replaced by empty strings. The
 columns of the result row appear in the same order in which they
 appeared on the SELECT statement. The
 return of \fBnextlist\fR is \fB1\fR if the operation succeeded, and
 \fB0\fR  if the end of the result set was reached.
 .PP
-The \fBnextdict\fR object command sets the variable given by \fIvarname\fR 
+The \fBnextdict\fR object command sets the variable given by \fIvarname\fR
 in the caller's scope to the next row of the results, expressed as a
 dictionary. The dictionary's keys are column names, and the values are
 the values of those columns in the row. If a column's value in the row
@@ -126,7 +126,7 @@ return of \fBnextdict\fR is \fB1\fR if the operation succeeded, and
 .PP
 The \fBnextrow\fR object command is precisely equivalent to the
 \fBnextdict\fR or \fBnextlist\fR object command, depending on whether
-\fB-as dicts\fR (the default) or \fB-as lists\fR is specified. 
+\fB-as dicts\fR (the default) or \fB-as lists\fR is specified.
 .PP
 Some databases support the idea of a single statement that returns multiple
 sets of results. The \fBnextresults\fR object command is executed, typically
@@ -164,9 +164,9 @@ iteration terminates prematurely. If the script performs a
 If the script performs a \fBreturn\fR, results are the same as if a
 script outside the control of \fBforeach\fR had returned. Any other
 unusual return code terminates the iteration and is reported from the
-\fBforeach\fR. 
+\fBforeach\fR.
 .PP
-Once \fBnextrow\fR returns \fB0\fR, the \fBforeach\fR object command 
+Once \fBnextrow\fR returns \fB0\fR, the \fBforeach\fR object command
 tries to advance to the next result set using \fBnextresults\fR.  If
 \fBnextresults\fR returns \fB1\fR, the above steps (\fBcolumns\fR and
 \fBnextrow\fR, with script invocation) are repeated as long as more

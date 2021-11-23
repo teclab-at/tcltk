@@ -4,7 +4,7 @@
 # Make sure that TDBC is running in a compatible version of Tcl, and
 # that TclOO is available.
 
-if {[catch {package present Tcl 8.6-}]} {
+if {![package vsatisfies [package provide Tcl] 8.6-]} {
     return
 }
 apply {{dir} {

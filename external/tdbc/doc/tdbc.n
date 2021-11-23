@@ -73,7 +73,7 @@ In addition, TDBC itself has a few service procedures that are chiefly
 of interest to driver writers. \fBSEE ALSO\fR also enumerates them.
 .SH "SEE ALSO"
 Tdbc_Init(3),
-tdbc::connection(n), tdbc::mapSqlState(n), 
+tdbc::connection(n), tdbc::mapSqlState(n),
 tdbc::resultset(n), tdbc::statement(n), tdbc::tokenize(n),
 tdbc::mysql(n), tdbc::odbc(n), tdbc::postgres(n), tdbc::sqlite3(n)
 .SH "KEYWORDS"
