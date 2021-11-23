@@ -73,7 +73,7 @@ function getstype {
 ## helper functions
 
 ## defaults
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 
 ## check command line parameters
 INDEX=1

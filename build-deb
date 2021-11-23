@@ -8,7 +8,7 @@ MANUFACT="(c) 2021 ATOS"
 AUTHORS="Thomas Perschak"
 
 ## defaults
-SCRIPTDIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$(dirname $(readlink -f $0))
 OUTDIR=$(readlink -m $SCRIPTDIR/../debian)
 
 ## helper functions
@@ -101,8 +101,8 @@ fi
 
 ## check if git folder is clean
 if [ -z "$ALLOWDIRTY" ]; then
-    if [ -n "$(git diff-index --quiet HEAD || echo untracked)" ]; then
-        echo "There are uncommited or untracked files in your repository. Denying debian build." >&2
+    if [ -n "$(git -C $SCRIPTDIR status -s)" ] || [ -n "$(git -C $SCRIPTDIR cherry)" ]; then
+        echo "There are uncommited, untracked files or non-pushed changes in this repository. Denying debian build." >&2
         exit 1
     fi
 fi
@@ -179,7 +179,6 @@ if [ -z "$NOBRANCHNAME" ]; then DEBFILE=$DEBFILE.$GITBRANCH; fi
 DEBFILE=$DEBFILE.$BUILDOSFILE.$BUILDMACHINE
 if [ -n "$TITLE" ]; then DEBFILE=$DEBFILE.$TITLE; fi
 INSTDIR=/opt/$DEBNAME
-RELDIR=$(mktemp -d)
 
 ## done collecting build infos
 echo done
@@ -194,14 +193,13 @@ fi
 
 ## create release directory
 echo -n "Build up release folder ... "
-rm -fr $RELDIR
-mkdir -p $RELDIR
-mkdir -p $RELDIR$INSTDIR
-rsync -a $SCRIPTDIR/$BINDIR/* $RELDIR$INSTDIR
+RELDIR=$(mktemp -d)
+mkdir -p $RELDIR/$INSTDIR
+rsync -a $SCRIPTDIR/$BINDIR/* $RELDIR/$INSTDIR
 mkdir -p $RELDIR/usr/share; mkdir -p $RELDIR/usr/share/pixmaps; mkdir -p $RELDIR/usr/share/applications
-cp -f $RELDIR$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/tkcon87.png
-cp -f $RELDIR$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/wish87.png
-cp -f $RELDIR$INSTDIR/share/config/tkcon87.desktop.template $RELDIR/usr/share/applications/tkcon87.desktop
+cp -f $RELDIR/$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/tkcon87.png
+cp -f $RELDIR/$INSTDIR/img/mainicon.png $RELDIR/usr/share/pixmaps/wish87.png
+cp -f $RELDIR/$INSTDIR/share/config/tkcon87.desktop.template $RELDIR/usr/share/applications/tkcon87.desktop
 sed -i "s|%installdir%|$INSTDIR|g" $RELDIR/usr/share/applications/tkcon87.desktop
 echo -n "debian folder ... "
 mkdir -p $RELDIR/DEBIAN
@@ -220,7 +218,7 @@ done
 (
     cd $RELDIR
     find ./ -name "*~" | xargs rm -f
-    cd $RELDIR$INSTDIR
+    cd $RELDIR/$INSTDIR
     rm -f  ./build-deb
     rm -f  ./build-doxy.sh
     rm -f  ./setgit
@@ -234,14 +232,16 @@ echo done
 ## plattform specific
 if [ -z "$WINDIR" ]; then
     ## execute build
+    mkdir -p $OUTDIR
     $SCRIPTDIR/../gse4-service/build-deb -indir $RELDIR -outdir $OUTDIR -file $DEBFILE $FOPTIONS
 else
     ## name folder to release version
-    mv -f $RELDIR$INSTDIR $RELDIR$INSTDIR/../$DEBFILE | true
+    mv -f $RELDIR/$INSTDIR $RELDIR/$INSTDIR/../$DEBFILE | true
     
     ## compress to tgz file
     echo -n "Compressing $(realpath --relative-to=$SCRIPTDIR $DEBFILE.tgz) ... "
-    tar -czf $OUTDIR/$DEBFILE.tgz -C $(readlink -m $RELDIR$INSTDIR/../$DEBFILE/..) $DEBFILE | true
+    mkdir -p $OUTDIR
+    tar -czf $OUTDIR/$DEBFILE.tgz -C $(readlink -m $RELDIR/$INSTDIR/../$DEBFILE/..) $DEBFILE | true
     echo done
 fi
 
