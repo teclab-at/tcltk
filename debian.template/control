@@ -1,9 +1,9 @@
 Package: tcltk85
 Version: %deb_version%
-Release: 25
+Release: 26
 Pre-Depends: chrpath, awk, sed, libpq5
 Depends: libfftw3-3
-Maintainer: (c) 2020 ATOS, Thomas Perschak
+Maintainer: (c) 2022 ATOS, Thomas Perschak
 Section: GSE
 Homepage: http://www.atos.net
 Tag: gse, scoe, tcl, tcltk

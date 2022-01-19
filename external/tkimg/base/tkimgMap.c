@@ -60,7 +60,7 @@ void tkimg_CreateGammaTable (float gammaVal, float *gammaTable)
     int i;
 
     for (i = 0; i < IMG_GAMMA_TABLE_SIZE - 1; i++) {
-        gammaTable[i] = pow ((float) i / (float) (IMG_GAMMA_TABLE_SIZE - 2), 
+        gammaTable[i] = pow ((float) i / (float) (IMG_GAMMA_TABLE_SIZE - 2),
                         1.0 / gammaVal);
     }
     gammaTable[IMG_GAMMA_TABLE_SIZE - 1] = 1.0f;
@@ -198,7 +198,7 @@ int tkimg_ReadUByteRow (tkimg_MFile *handle, unsigned char *pixels, int nBytes)
 #if DEBUG_READ == 1
     printf ("Reading %d UBytes\n", nBytes); fflush (stdout);
 #endif
-    if (nBytes != tkimg_Read2(handle, (char *)pixels, nBytes)) {
+    if ((size_t)nBytes != tkimg_Read2(handle, (char *)pixels, nBytes)) {
         return 0;
     }
     return 1;
@@ -214,7 +214,7 @@ int tkimg_ReadUShortRow (tkimg_MFile *handle, unsigned short *pixels, int nShort
 #if DEBUG_READ == 1
     printf ("Reading %d UShorts\n", nShorts); fflush (stdout);
 #endif
-    if (2 * nShorts != tkimg_Read2(handle, buf, 2 * nShorts)) {
+    if (2 * (size_t)nShorts != tkimg_Read2(handle, buf, 2 * nShorts)) {
         return 0;
     }
 
@@ -246,7 +246,7 @@ int tkimg_ReadShortRow (tkimg_MFile *handle, short *pixels, int nShorts,
 #if DEBUG_READ == 1
     printf ("Reading %d Shorts\n", nShorts); fflush (stdout);
 #endif
-    if (2 * nShorts != tkimg_Read2(handle, buf, 2 * nShorts)) {
+    if (2 * (size_t)nShorts != tkimg_Read2(handle, buf, 2 * nShorts)) {
         return 0;
     }
 
@@ -278,7 +278,7 @@ int tkimg_ReadFloatRow (tkimg_MFile *handle, float *pixels, int nFloats,
 #if DEBUG_READ == 1
     printf ("Reading %d floats\n", nFloats); fflush (stdout);
 #endif
-    if (4 * nFloats != tkimg_Read2(handle, buf, 4 * nFloats)) {
+    if (4 * (size_t)nFloats != tkimg_Read2(handle, buf, 4 * nFloats)) {
         return 0;
     }
 
@@ -368,7 +368,7 @@ int tkimg_ReadUShortFile (tkimg_MFile *handle, unsigned short *buf, int width, i
         minVals[c] = (float) 1.0E30;
         maxVals[c] = (float)-1.0E30;
     }
-    line = ckalloc (sizeof (unsigned short) * nchan * width);
+    line = (char *)ckalloc (sizeof (unsigned short) * nchan * width);
 
     for (y=0; y<height; y++) {
         if (! tkimg_ReadUShortRow (handle, bufPtr, nchan * width, line, swapBytes)) {
@@ -423,7 +423,7 @@ int tkimg_ReadFloatFile (tkimg_MFile *handle, float *buf, int width, int height,
         minVals[c] = (float) 1.0E30;
         maxVals[c] = (float)-1.0E30;
     }
-    line = ckalloc (sizeof (float) * nchan * width);
+    line = (char *)ckalloc (sizeof (float) * nchan * width);
 
     for (y=0; y<height; y++) {
         if (! tkimg_ReadFloatRow (handle, bufPtr, nchan * width, line, swapBytes)) {
@@ -493,7 +493,7 @@ static int getHistogramIndex (float val, float minVal, float maxVal )
     return histoInd;
 }
 
-static void histogramFloat (float *buf, int width, int height, int nchan,
+static void histogramFloat (float *buf, int width, int height, TCL_UNUSED(int) /* nchan */,
                             float minVals[], float maxVals[], int histogram[],
                             int printAgc)
 {
@@ -568,7 +568,7 @@ void tkimg_RemapFloatValues (float *buf, int width, int height, int nchan,
         }
 
         for (c=0; c<nchan; c++) {
-            minNewVals[c] = minLutInd * (maxVals[c] - minVals[c]) / 
+            minNewVals[c] = minLutInd * (maxVals[c] - minVals[c]) /
                             IMG_HISTOGRAM_SCALE + minVals[c];
             maxNewVals[c] = maxLutInd * (maxVals[c] - minVals[c]) /
                             IMG_HISTOGRAM_SCALE + minVals[c];

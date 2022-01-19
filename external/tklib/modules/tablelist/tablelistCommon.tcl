@@ -1,14 +1,14 @@
 #==============================================================================
 # Main Tablelist and Tablelist_tile package module.
 #
-# Copyright (c) 2000-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2000-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 namespace eval ::tablelist {
     #
     # Public variables:
     #
-    variable version	6.16
+    variable version	6.17
     variable library
     if {$::tcl_version >= 8.4} {
 	set library	[file dirname [file normalize [info script]]]
@@ -100,10 +100,10 @@ proc ::tablelist::loadUtils {} {
     }
     package require mwutil 2.19
 
-    if {[catch {package present scaleutil} version] == 0 && $version < 1.6} {
+    if {[catch {package present scaleutil} version] == 0 && $version < 1.7} {
 	package forget scaleutil
     }
-    package require scaleutil 1.6
+    package require scaleutil 1.7
 
     package require scaleutilmisc 1.2
 }

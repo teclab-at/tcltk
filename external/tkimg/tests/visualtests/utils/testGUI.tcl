@@ -69,7 +69,7 @@ proc bmpHalt {} {
 	0x60, 0x06, 0xc0, 0x03, 0x80, 0x01, 0xc0, 0x03, 0x60, 0x06, 0x30, 0x0c,
 	0x18, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     }
-} 
+}
 
 proc ui_initToolhelp { w { bgColor yellow } { fgColor black } } {
     global ui_helpWidget
@@ -158,7 +158,7 @@ proc showimg { imgNo } {
 
 proc ui_addimg { poImg str { chanMap {} } } {
     global ui_enable_tk ui_curImgNo ui_noImgs ui_strings ui_images ui_photos
- 
+
     set ui_strings($ui_curImgNo) $str
     set ui_images($ui_curImgNo) $poImg
     if { $ui_enable_tk } {
@@ -172,7 +172,7 @@ proc ui_addimg { poImg str { chanMap {} } } {
 
 proc ui_addphoto { phImg str } {
     global ui_enable_tk ui_curImgNo ui_noImgs ui_strings ui_images ui_photos
- 
+
     set ui_strings($ui_curImgNo) $str
     set ui_images($ui_curImgNo)  "none"
     if { $ui_enable_tk } {
@@ -242,7 +242,7 @@ proc ui_show {} {
 	    pack $fr.first $fr.prev $fr.next $fr.last \
 	         -in $fr -side left -padx 0
 	    pack $fr.play -in $fr -side left -padx 0
-    
+
 	    bind $ui_top <Key-Right>  show_next
 	    bind $ui_top <Key-Left>   show_prev
 	    bind $ui_top <Key-p>      show_play

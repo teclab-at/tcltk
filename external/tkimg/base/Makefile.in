@@ -11,7 +11,6 @@
 #
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
 
 #========================================================================
 # Add additional lines to handle any additional AC_SUBST cases that
@@ -73,7 +72,8 @@ exec_prefix	= @exec_prefix@
 bindir		= @bindir@
 libdir		= @libdir@
 includedir	= @includedir@
-datarootdir     = @datarootdir@
+datarootdir	= @datarootdir@
+runstatedir	= @runstatedir@
 datadir		= @datadir@
 mandir		= @mandir@
 
@@ -288,6 +288,20 @@ VPATH = $(srcdir):$(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
 .c.@OBJEXT@:
 	$(COMPILE) -c `@CYGPATH@ $<` -o $@
 
+tkimg.@OBJEXT@:	tkimgUuid.h
+
+$(srcdir)/../manifest.uuid:
+	printf "git-" >$(srcdir)/../manifest.uuid
+	(cd $(srcdir); git rev-parse HEAD >>$(srcdir)/../manifest.uuid || \
+	    (printf "svn-r" >$(srcdir)/../manifest.uuid ; \
+	    svn info --show-item last-changed-revision >>$(srcdir)/../manifest.uuid) || \
+	    printf "unknown" >$(srcdir)/../manifest.uuid)
+
+tkimgUuid.h:	$(srcdir)/../manifest.uuid
+	echo "#define TKIMG_VERSION_UUID \\" >$@
+	cat $(srcdir)/../manifest.uuid >>$@
+	echo "" >>$@
+
 #========================================================================
 # Create the pkgIndex.tcl file.
 # It is usually easiest to let Tcl do this for you with pkg_mkIndex, but
@@ -319,14 +333,14 @@ dist-clean:
 
 dist: dist-clean doc
 	mkdir -p $(DIST_DIR)
-	cp -p $(srcdir)/ChangeLog $(srcdir)/README* $(srcdir)/doc/license* \
+	cp -p $(srcdir)/ChangeLog $(srcdir)/configure.ac \
 		$(srcdir)/aclocal.m4 $(srcdir)/configure $(srcdir)/*.in \
 		$(DIST_DIR)/
 	chmod 664 $(DIST_DIR)/Makefile.in $(DIST_DIR)/aclocal.m4
 	chmod 775 $(DIST_DIR)/configure $(DIST_DIR)/configure.ac
 
 	mkdir $(DIST_DIR)/tclconfig
-	cp $(srcdir)/tclconfig/install-sh $(srcdir)/tclconfig/tcl.m4 \
+	cp $(srcdir)/../tclconfig/install-sh $(srcdir)/../tclconfig/tcl.m4 \
 		$(DIST_DIR)/tclconfig/
 	chmod 664 $(DIST_DIR)/tclconfig/tcl.m4
 	chmod +x $(DIST_DIR)/tclconfig/install-sh

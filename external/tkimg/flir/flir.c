@@ -33,7 +33,7 @@
  *
  *                      Mode "none":
  *                      If mapping mode is set to "none", no mapping of input
- *                      values is done. Use this mode, if the image already 
+ *                      values is done. Use this mode, if the image already
  *                      contains RGB values in the range of 0 ..255.
  *                      When using mode "none", no information about the
  *                      minimum and maximum pixel values is gathered during
@@ -46,7 +46,7 @@
  *
  *                      Mode "agc":
  *                      "agc" applies an automatic gain control algorithmn to the
- *                      image data. 
+ *                      image data.
  *                      Currently implemented for 1-channel 32-bit float images only.
  * -gamma <float>:      Specify a gamma correction to be applied when mapping
  *                      the input data to 8-bit image values.
@@ -60,7 +60,7 @@
  *                      Default is the minimum value found in the image data.
  * -saturation <float>: If option is given, an Automatic Gain Control algorithmn is
  *                      applied to the input values. The supplied value specifies the
- *                      saturation value, i.e. all pixel values greater than the 
+ *                      saturation value, i.e. all pixel values greater than the
  *                      saturation are mapped to white.
  *                      Valid for mapping mode: agc
  * -cutoff <float>:     If option is given, an Automatic Gain Control algorithmn is
@@ -187,7 +187,7 @@ typedef struct {
     FPF_OBJECT_PARAM objParam;
     FPF_DATETIME     datetime;
     FPF_SCALING      scaling;
-    UInt             spare[32]; 
+    UInt             spare[32];
 } FPF_HEADER;
 
 /* Format options structure for use with ParseFormatOpts */
@@ -316,7 +316,7 @@ static int ParseFormatOpts(
     FMTOPT *opts
 ) {
     static const char *const fpfOptions[] = {
-         "-verbose", "-min", "-max", "-gamma", "-map", 
+         "-verbose", "-min", "-max", "-gamma", "-map",
          "-uuencode", "-saturation", "-cutoff", "-printagc", NULL
     };
     int objc, i, index;
@@ -636,7 +636,7 @@ static int CommonRead(
         case TYPE_FLOAT: {
             tf.floatBuf = (Float *)ckalloc (fileWidth*fileHeight*nChans*sizeof (Float));
             tkimg_ReadFloatFile (handle, tf.floatBuf, fileWidth, fileHeight, nChans,
-                                 swapBytes, opts.verbose, opts.mapMode != IMG_MAP_NONE, 
+                                 swapBytes, opts.verbose, opts.mapMode != IMG_MAP_NONE,
                                  minVals, maxVals, opts.saturation);
             break;
         }

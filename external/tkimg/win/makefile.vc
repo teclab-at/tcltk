@@ -1,5 +1,5 @@
 # This is the master makefile to build all tkimg components. Run as
-# 
+#
 #   nmake /s /nologo /f makefile.vc INSTALLDIR=c:\full\path\to\installdir TCLDIR=c:\full\path\to\tcl\sources TKDIR=c:\full\path\to\tk\sources
 #
 # To build specific modules, pass the MODULES macro on the command line
@@ -76,7 +76,7 @@ install:
 
 clean hose realclean: .PHONY
 	$(MAKE) /$(MAKEFLAGS) /f makefile.vc TARGET=$@ OPTS=$(OPTS) STATS=$(STATS) CHECKS=$(CHECKS) INSTALLDIR=$(INSTALLDIR) TCLDIR=$(TCLDIR) TKDIR=$(TKDIR)
-	@del nmakehlp.out version*.vc nmakehlp.obj nmakehlp.exe 
+	@del nmakehlp.out version*.vc nmakehlp.obj nmakehlp.exe
 
 .PHONY:
 

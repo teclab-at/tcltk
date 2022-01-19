@@ -23,7 +23,7 @@ contain any of the special options listed in section
 [section {GIF OPTIONS}]
 
 The handler provides two options, one for reading from a GIF image,
-the other influencing the writing of such. 
+the other influencing the writing of such.
 
 [list_begin definitions]
 

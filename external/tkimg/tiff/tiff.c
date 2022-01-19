@@ -429,8 +429,8 @@ ObjRead(
     Tcl_Obj *data,                      /* object containing the image */
     Tcl_Obj *format,
     Tk_PhotoHandle imageHandle,
-    int destX, int destY, 
-    int width, int height, 
+    int destX, int destY,
+    int width, int height,
     int srcX, int srcY
 ) {
     TIFF *tif;

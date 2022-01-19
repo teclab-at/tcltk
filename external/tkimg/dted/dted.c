@@ -228,7 +228,7 @@ static Boln readInt (tkimg_MFile *handle, Int *i)
 
 #define OUT Tcl_WriteChars (outChan, str, -1)
 static void printImgInfo (DTEDHEADER *th, FMTOPT *opts,
-                          const char *filename, const char *msg)
+                          TCL_UNUSED(const char *), const char *msg)
 {
     Tcl_Channel outChan;
     char str[256];
@@ -305,7 +305,7 @@ static Boln readDtedColumn (tkimg_MFile *handle, Short *pixels, Int nRows,
 
     /* Read the elevation data into the supplied column buffer "buf". */
     nBytes = sizeof (Short) * nRows;
-    if (nBytes != tkimg_Read2(handle, buf, nBytes)) {
+    if ((size_t)nBytes != tkimg_Read2(handle, buf, nBytes)) {
         printf ("Error reading elevation data\n");
         return FALSE;
     }
@@ -363,7 +363,7 @@ static Boln readDtedFile (tkimg_MFile *handle, Short *buf, Int width, Int height
         minVals[c] =  MAX_SHORT;
         maxVals[c] =  MIN_SHORT;
     }
-    colBuf = ckalloc (sizeof (Short) * nchan * height);
+    colBuf = (char *)ckalloc (sizeof (Short) * nchan * height);
 
     /* Read the elevation data column by column. */
     for (x=0; x<width; x++) {
@@ -544,7 +544,7 @@ static int ParseFormatOpts(
 
 static int ChnMatch(
     Tcl_Channel chan,
-    const char *filename,
+    TCL_UNUSED(const char *),
     Tcl_Obj *format,
     int *widthPtr,
     int *heightPtr,
@@ -748,9 +748,9 @@ static int CommonRead(
 
 static int ChnWrite(
     Tcl_Interp *interp,
-    const char *filename,
-    Tcl_Obj *format,
-    Tk_PhotoImageBlock *blockPtr
+    TCL_UNUSED(const char *),
+    TCL_UNUSED(Tcl_Obj *),
+    TCL_UNUSED(Tk_PhotoImageBlock *)
 ) {
     Tcl_AppendResult (interp, "Writing not supported for format ", sImageFormat.name, NULL);
     return TCL_ERROR;
@@ -758,8 +758,8 @@ static int ChnWrite(
 
 static int StringWrite(
     Tcl_Interp *interp,
-    Tcl_Obj *format,
-    Tk_PhotoImageBlock *blockPtr
+    TCL_UNUSED(Tcl_Obj *),
+    TCL_UNUSED(Tk_PhotoImageBlock *)
 ) {
     Tcl_AppendResult (interp, "Writing not supported for format ", sImageFormat.name, NULL);
     return TCL_ERROR;

@@ -1,3 +1,55 @@
+2022-01-10  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* Released Scrollutil 1.13.
+
+2022-01-01  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:                           Updated the copyright information.
+	* COPYRIGHT.txt:
+	* scripts/*.tcl:
+	* scripts/utils/*.tcl:
+	* ../../examples/scrollutil/*.tcl:
+	* ../../examples/scrollutil/*.itk:
+
+2021-12-29  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:         Bumped the version number to 1.13.
+	* COPYRIGHT.txt:
+	* README.txt:
+
+	* CHANGES.txt: Updated to reflect the changes.
+	* doc/*.html:
+
+	* scripts/scrollarea.tcl: Slightly improved.
+
+	* scripts/scrollableframe.tcl: Added code that handles the virtual
+	  event <<NoManagedChild>>, sent by Tk 8.7a3 and later to the content
+	  frame of a scrollableframe when its last widget managed via pack or
+	  grid becomes unmanaged (see TIP 518).
+
+	* ../../examples/scrollutil/*.tcl: Improved the demo scripts
+	  "*FrmDemo*.tcl" and "*NotebookDemo.tcl" by configuring their
+	  scrollable widget container(s) and notebook widget, respectively
+	  (e.g., setting the widget's width) from within an "after 50" script
+	  rather than preceding this step by an invocation of "update
+	  idletasks".
+
+	* scripts/tclIndex: Newly generated.
+
+	* doc/ScrollableFrmDemo2.png: Updated screenshot.
+
+2021-12-21  Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* scripts/utils/scaleutil.tcl: The scaleutil package now works "as is"
+	  with undroidwish and AndroWish, too; added a way to prevent this
+	  package from changing Tk's scaling factor when calculating the
+	  scaling percentage corresponding to the display's DPI scaling level
+	  on X11; fixed a bug related to setting the default height of the
+	  ttk::treeview rows for one of the themes provided by the awthemes
+	  package.
+
+	* scripts/utils/pkgIndex.tcl: Bumped the scaleutil version to 1.7.
+
 2021-11-11  Csaba Nemethi <csaba.nemethi@t-online.de>
 
 	* Released Scrollutil 1.12.

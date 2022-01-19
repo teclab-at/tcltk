@@ -50,7 +50,7 @@
  * -max <float>:        Specify the maximum pixel value to be used for mapping
  *                      the input data to 8-bit image values.
  *                      Default is the maximum value found in the image data.
- * -scanorder <string>: Specify the scanline order of the input image. Convention 
+ * -scanorder <string>: Specify the scanline order of the input image. Convention
  *                      is storing scan lines from top to bottom.
  *                      Possible values: "TopDown" or "BottomUp".
  * -ascii <bool>:       If set to true, file is written in PPM ASCII format (P3).
@@ -146,7 +146,7 @@ typedef struct {
 } PPMFILE;
 
 #define OUT Tcl_WriteChars (outChan, str, -1)
-static void printImgInfo (int width, int height, int maxVal, int isAscii, int nChans, 
+static void printImgInfo (int width, int height, int maxVal, int isAscii, int nChans,
                           FMTOPT *opts, const char *filename, const char *msg)
 {
     Tcl_Channel outChan;
@@ -230,7 +230,7 @@ static Boln readUShortRow (Tcl_Interp *interp, tkimg_MFile *handle, UShort *pixe
     if (2 * nShorts != tkimg_Read2(handle, buf, 2 * nShorts)) {
         return FALSE;
     }
-             
+
     if (swapBytes) {
         for (i=0; i<nShorts; i++) {
             ((char *)mPtr)[0] = bufPtr[1];
@@ -256,7 +256,7 @@ static Boln readUByteRow (Tcl_Interp *interp, tkimg_MFile *handle, UByte *pixels
     char  *bufPtr = buf;
     UInt  i, val;
 
-    #ifdef DEBUG_LOCAL 
+    #ifdef DEBUG_LOCAL
         printf ("Reading %d UBytes\n", nBytes);
     #endif
     if (isAscii) {
@@ -272,7 +272,7 @@ static Boln readUByteRow (Tcl_Interp *interp, tkimg_MFile *handle, UByte *pixels
     if (nBytes != tkimg_Read2(handle, buf, nBytes)) {
         return FALSE;
     }
-             
+
     for (i=0; i<nBytes; i++) {
         ((char *)mPtr)[0] = bufPtr[0];
         mPtr++;
@@ -282,14 +282,14 @@ static Boln readUByteRow (Tcl_Interp *interp, tkimg_MFile *handle, UByte *pixels
 }
 
 static Boln readUShortFile (Tcl_Interp *interp, tkimg_MFile *handle, UShort *buf, Int width, Int height,
-                            Int nchan, Boln swapBytes, Boln isAscii, Boln verbose, 
+                            Int nchan, Boln swapBytes, Boln isAscii, Boln verbose,
                             Float minVals[], Float maxVals[])
 {
     Int    x, y, c;
     UShort *bufPtr = buf;
     char   *line;
 
-    #ifdef DEBUG_LOCAL 
+    #ifdef DEBUG_LOCAL
         printf ("readUShortFile: Width=%d Height=%d nchan=%d swapBytes=%s\n",
                  width, height, nchan, swapBytes? "yes": "no");
     #endif
@@ -329,14 +329,14 @@ static Boln readUShortFile (Tcl_Interp *interp, tkimg_MFile *handle, UShort *buf
 }
 
 static Boln readUByteFile (Tcl_Interp *interp, tkimg_MFile *handle, UByte *buf, Int width, Int height,
-                           Int nchan, Boln swapBytes, Boln isAscii, Boln verbose, 
+                           Int nchan, Boln swapBytes, Boln isAscii, Boln verbose,
                            Float minVals[], Float maxVals[])
 {
     Int   x, y, c;
     UByte *bufPtr = buf;
     char  *line;
 
-    #ifdef DEBUG_LOCAL 
+    #ifdef DEBUG_LOCAL
         printf ("readUByteFile: Width=%d Height=%d nchan=%d swapBytes=%s\n",
                  width, height, nchan, swapBytes? "yes": "no");
     #endif
@@ -421,7 +421,7 @@ static int ParseFormatOpts(
                                           (char *) NULL);
                         return TCL_ERROR;
                     }
-                    opts->verbose = boolVal; 
+                    opts->verbose = boolVal;
                     break;
                 case 1:
                     if (Tcl_GetDouble(interp, optionStr, &doubleVal) == TCL_ERROR) {
@@ -493,7 +493,7 @@ static int CommonRead (Tcl_Interp *interp, tkimg_MFile *handle,
 static int CommonWrite (Tcl_Interp *interp,
                 const char *filename, Tcl_Obj *format,
                 tkimg_MFile *handle, Tk_PhotoImageBlock *blockPtr);
-static int ReadPPMFileHeader (tkimg_MFile *handle, int *widthPtr, 
+static int ReadPPMFileHeader (tkimg_MFile *handle, int *widthPtr,
                 int *heightPtr, int *maxIntensityPtr, Boln *isAsciiPtr);
 
 
@@ -764,7 +764,7 @@ static int CommonRead(
                 } else {
                     ushortBufPtr = tf.ushortBuf + y * fileWidth * block.pixelSize;
                 }
-                tkimg_UShortToUByte (fileWidth * block.pixelSize, ushortBufPtr, 
+                tkimg_UShortToUByte (fileWidth * block.pixelSize, ushortBufPtr,
                                      opts.gamma != 1.0? gtable: NULL, pixbufPtr);
                 ushortBufPtr += fileWidth * block.pixelSize;
                 break;
@@ -784,7 +784,7 @@ static int CommonRead(
         }
         if (y >= srcY) {
             if (tkimg_PhotoPutBlock(interp, imageHandle, &block, destX, outY,
-                                width, 1, 
+                                width, 1,
                                 block.offset[3]?
                                 TK_PHOTO_COMPOSITE_SET:
                                 TK_PHOTO_COMPOSITE_OVERLAY) == TCL_ERROR) {

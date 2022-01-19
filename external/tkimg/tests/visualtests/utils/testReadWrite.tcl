@@ -40,7 +40,7 @@ proc readPhotoFile1 { name fmt } {
         P "\tError message: $ph"
         set retVal [catch {image create photo -file $name -format $fmt} ph]
         if { $retVal != 0 } {
-            P "\tERROR: Cannot read image file with format option $fmt" 
+            P "\tERROR: Cannot read image file with format option $fmt"
             P "\tError message: $ph"
             return ""
         }
@@ -51,7 +51,7 @@ proc readPhotoFile1 { name fmt } {
 }
 
 # Load image data directly from a file into a photo image.
-# Uses commands: set ph [image create photo] ; $ph read "fileName" 
+# Uses commands: set ph [image create photo] ; $ph read "fileName"
 # args maybe "-from ..." and/or "-to ..." option.
 proc readPhotoFile2 { name fmt width height args } {
     PN "File read 2: "
@@ -68,7 +68,7 @@ proc readPhotoFile2 { name fmt width height args } {
         P "\tError message: $errMsg"
         set retVal [catch {eval {$ph read $name -format $fmt} $args} errMsg]
         if { $retVal != 0 } {
-            P "\tERROR: Cannot read image file with format option $fmt" 
+            P "\tERROR: Cannot read image file with format option $fmt"
             P "\tError message: $errMsg"
             return ""
         }
@@ -179,7 +179,7 @@ proc writePhotoFile { ph name fmt del args } {
     set eTime [clock clicks -milliseconds]
 
     if { $retVal != 0 } {
-        P "\n\tERROR: Cannot write image file $name (Format: $fmt)" 
+        P "\n\tERROR: Cannot write image file $name (Format: $fmt)"
         P "\tError message: $str"
         return ""
     }
@@ -197,7 +197,7 @@ proc writePhotoString { ph fmt del args } {
     set retVal [catch {eval {$ph data -format $fmt} $args} str]
     set eTime [clock clicks -milliseconds]
     if { $retVal != 0 } {
-        P "\n\tERROR: Cannot write image to string (Format: $fmt)" 
+        P "\n\tERROR: Cannot write image to string (Format: $fmt)"
         P "\tError message: $str"
         return ""
     }
@@ -233,7 +233,7 @@ proc getCanvasPhoto { canvId } {
 }
 
 proc delayedUpdate {} {
-    update 
+    update
     after 200
 }
 
@@ -255,18 +255,18 @@ proc drawTestCanvas { imgVersion} {
     canvas $canvId -bg gray -width 240 -height 220
     pack $canvId
 
-    P "Loading uuencoded GIF image into canvas .." 
+    P "Loading uuencoded GIF image into canvas .."
     set retVal [catch {image create photo -data [pwrdLogo]} phImg]
     if { $retVal != 0 } {
-        P "FATAL ERROR: Cannot load uuencode GIF image into canvas." 
-        P "             Test will be cancelled." 
+        P "FATAL ERROR: Cannot load uuencode GIF image into canvas."
+        P "             Test will be cancelled."
         exit 1
     }
 
     $canvId create image 0 0 -anchor nw -tags MyImage
     $canvId itemconfigure MyImage -image $phImg
 
-    P "Drawing text and rectangles into canvas .." 
+    P "Drawing text and rectangles into canvas .."
     $canvId create rectangle 1 1 239 219 -outline black
     $canvId create rectangle 3 3 237 217 -outline green -width 2
     delayedUpdate

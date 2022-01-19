@@ -22,14 +22,14 @@
  *                  format is printed to stdout. Default is "false".
  * -gamma <float>:  Use the specified gamma value when reading an image.
  *                  This option overwrites gamma values specified in the file.
- *                  If this option is not specified and no gamma value is in the file, 
- *                  a default value of 1.0 is used. 
+ *                  If this option is not specified and no gamma value is in the file,
+ *                  a default value of 1.0 is used.
  * -matte <bool>:   If set to false, a matte (alpha) channel is ignored
  *                  during reading. Default is true.
  * -alpha <float>:  An additional alpha filtering for the overall image, which
  *                  allows the background on which the image is displayed to show through.
  *                  This usually also has the effect of desaturating the image.
- *                  The alphaValue must be between 0.0 and 1.0. 
+ *                  The alphaValue must be between 0.0 and 1.0.
  *                  Specifying an alpha value, overrides the setting of the matte flag,
  *                  i.e. reading a file which has no alpha channel (Greyscale, RGB) will
  *                  add an alpha channel to the image independent of the matte flag setting.
@@ -556,7 +556,7 @@ CommonReadPNG(
     }
 
     if (tkimg_PhotoPutBlock(
-        interp, imageHandle, &block, 
+        interp, imageHandle, &block,
         destX, destY, width, height,
         block.offset[3]? TK_PHOTO_COMPOSITE_OVERLAY: TK_PHOTO_COMPOSITE_SET) == TCL_ERROR) {
         result = TCL_ERROR;
