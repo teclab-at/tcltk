@@ -167,7 +167,7 @@ template <typename P>
 void resample1d::operator () (const P* const sourcearray, P* targetarray, int sskip, int tskip) {
   
   for (int pos=0; pos<leftborder; pos++) {
-    register accum<P> sum;
+    accum<P> sum;
     int left=windowleft[pos];
     int right=std::min(taps, sourcelength-left);
     for (int wpos=-left; wpos<right; wpos++) {
@@ -179,7 +179,7 @@ void resample1d::operator () (const P* const sourcearray, P* targetarray, int ss
   
 
   for (int pos=leftborder; pos<rightborder; pos++) {
-    register accum<P> sum;
+    accum<P> sum;
     int left=windowleft[pos];
     for (int wpos=0; wpos<taps; wpos++) {
       sum.add(weights[taps*pos+wpos],sourcearray[(wpos+left)*sskip]);
@@ -190,7 +190,7 @@ void resample1d::operator () (const P* const sourcearray, P* targetarray, int ss
 
 
   for (int pos=rightborder; pos<targetlength; pos++) {
-    register accum<P> sum;
+     accum<P> sum;
     int left=windowleft[pos];
     for (int wpos=0; wpos<sourcelength-left; wpos++) {
       sum.add(weights[taps*pos+wpos],sourcearray[(wpos+left)*sskip]);
@@ -205,7 +205,7 @@ template <typename P>
 void resample1d::operator () (const P* const sourcearray, P* targetarray) {
   
   for (int pos=0; pos<leftborder; pos++) {
-    register accum<P> sum;
+    accum<P> sum;
     int left=windowleft[pos];
     int right=std::min(taps, sourcelength-left);
     for (int wpos=-left; wpos<right; wpos++) {
@@ -216,7 +216,7 @@ void resample1d::operator () (const P* const sourcearray, P* targetarray) {
   
 
   for (int pos=leftborder; pos<rightborder; pos++) {
-    register accum<P> sum;
+    accum<P> sum;
     int left=windowleft[pos];
     for (int wpos=0; wpos<taps; wpos++) {
       sum.add(weights[taps*pos+wpos],sourcearray[wpos+left]);
@@ -226,7 +226,7 @@ void resample1d::operator () (const P* const sourcearray, P* targetarray) {
 
 
   for (int pos=rightborder; pos<targetlength; pos++) {
-    register accum<P> sum;
+    accum<P> sum;
     int left=windowleft[pos];
     for (int wpos=0; wpos<sourcelength-left; wpos++) {
       sum.add(weights[taps*pos+wpos],sourcearray[wpos+left]);
@@ -301,12 +301,100 @@ public:
   }  
 };
 
+// Tk interface function for resampling
+std::string resizephoto(Tcl_Interp *interp, 
+                 Tk_PhotoHandle sourceh, 
+		 Tk_PhotoHandle targeth, 
+		 int x0, int y0, int x1, int y1, int xsize, int ysize)  {
+/* Copy photo source to target,
+ * crop to region (x0,y0) - (x1,y1) and resize to xsize*ysize
+   with standard filter options 
+   -1 can be given for x1 or y1 to extend to the image border */
+  
+   // Get adress of the binary data
+   Tk_PhotoImageBlock sourceblock;
+   Tk_PhotoImageBlock outputline;
+   Tk_PhotoGetImage(sourceh, &sourceblock);
+   int source_xsize=sourceblock.width;
+   int source_ysize=sourceblock.height;
+   int source_pitch=sourceblock.pitch;
+   int source_pixelSize=sourceblock.pixelSize;
+
+   outputline.width=xsize;
+   outputline.height=ysize;
+   outputline.pitch=xsize*depth;
+   outputline.pixelSize=depth;
+   for (int i=0; i<depth;i++)
+     outputline.offset[i]=i;
+   
+   std::vector <tuple> pixelPtr(xsize*ysize);
+   outputline.pixelPtr=reinterpret_cast<sample*> (&(pixelPtr[0]));
+   
+   if (x1 == -1) { x1 = source_xsize - 1; }
+   if (y1 == -1) { y1 = source_ysize - 1; }
+
+   #define check_bounds(x, size)  \
+	if (x < 0) STHROW(#x " coordinate is < 0") \
+	if (x >= size) STHROW(#x " coordinate is larger than the image")
+
+
+   // Check if the input region is reasonable
+   check_bounds(x0, source_xsize);
+   check_bounds(x1, source_xsize);
+   check_bounds(y0, source_ysize);
+   check_bounds(y1, source_ysize);
+
+
+   if (x1 < x0 || y1 < y0) {
+		STHROW("x1 > x0 and y1 > y0 not fulfilled");
+	}
+   
+   
+   // set source size to crop size
+   source_xsize = x1 - x0 + 1;
+   source_ysize = y1 - y0 + 1;
+   
+   // Allocate space for the intermediate interpolated image
+   // First resample along x-direction
+   // Size = new_x*old_y
+   std::vector <tuple> yresized(xsize*source_ysize);
+   // Setup resampling filter
+   resample1d xsampler(source_xsize, xsize);
+   for (int y=0; y<source_ysize; y++) {
+     // resample every line
+     tuple *sourceline=reinterpret_cast<tuple*> (sourceblock.pixelPtr + (y + y0)*source_pitch + x0*source_pixelSize);
+     tuple *targetline=&(yresized[xsize*y]);
+     xsampler(sourceline, targetline);
+   }
+
+   // Now resample along y-direction
+   // Setup resampling filter
+   resample1d ysampler(source_ysize, ysize); 
+   for (int x=0; x<xsize; x++) {
+     //resample every row
+     tuple *sourcerow=&(yresized[x]);
+     tuple *targetrow=&(pixelPtr[x]);
+     ysampler(sourcerow, targetrow, xsize, xsize);
+   }
+
+   // Set the output photo to the requested size
+   Tk_PhotoSetSize(interp, targeth, xsize, ysize);
+   
+   Tk_PhotoPutBlock(interp, targeth, &outputline,0,0,xsize,ysize,TK_PHOTO_COMPOSITE_SET);
+
+   return ("All OK");
+}
+
 
 // Tk interface function for resampling
 std::string resizephoto(Tcl_Interp *interp, 
                  Tk_PhotoHandle sourceh, 
 		 Tk_PhotoHandle targeth, 
 		 int xsize, int ysize)  {
+
+	
+	return resizephoto(interp, sourceh, targeth, 0, 0, -1, -1, xsize, ysize);
+	
 /* Copy photo source to target, resample to xsize*ysize
    with standard filter options */
   

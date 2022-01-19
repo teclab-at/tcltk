@@ -16,10 +16,11 @@
 #include <tcl.h>
 #include <string.h>
 #include "tdbcInt.h"
+#include "tdbcUuid.h"
 
 /* Static procedures declared in this file */
 
-static int TdbcMapSqlStateObjCmd(ClientData unused, Tcl_Interp* interp,
+static int TdbcMapSqlStateObjCmd(void *unused, Tcl_Interp* interp,
 				 int objc, Tcl_Obj *const objv[]);
 
 MODULE_SCOPE const TdbcStubs tdbcStubs;
@@ -159,7 +160,7 @@ Tdbc_MapSqlState(const char* sqlstate)
 
 static int
 TdbcMapSqlStateObjCmd(
-    ClientData dummy,		/* No client data */
+    void *dummy,		/* No client data */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
     Tcl_Obj *const objv[]	/* Parameter vector */
@@ -193,6 +194,11 @@ TdbcMapSqlStateObjCmd(
  *-----------------------------------------------------------------------------
  */
 
+#ifndef STRINGIFY
+#  define STRINGIFY(x) STRINGIFY1(x)
+#  define STRINGIFY1(x) #x
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
@@ -202,6 +208,7 @@ Tdbc_Init(
 ) {
 
     int i;
+    Tcl_CmdInfo info;
 
     /* Require Tcl */
 
@@ -213,13 +220,69 @@ Tdbc_Init(
 
     for (i = 0; commandTable[i].name != NULL; ++i) {
 	Tcl_CreateObjCommand(interp, commandTable[i].name, commandTable[i].proc,
-			     (ClientData) NULL, (Tcl_CmdDeleteProc*) NULL);
+			     NULL, NULL);
+    }
+    if (Tcl_GetCommandInfo(interp, "::tcl::build-info", &info)) {
+	Tcl_CreateObjCommand(interp, "::tdbc::build-info",
+		info.objProc, (void *)(
+		    PACKAGE_VERSION "+" STRINGIFY(TDBC_VERSION_UUID)
+#if defined(__clang__) && defined(__clang_major__)
+			    ".clang-" STRINGIFY(__clang_major__)
+#if __clang_minor__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__clang_minor__)
+#endif
+#if defined(__cplusplus) && !defined(__OBJC__)
+			    ".cplusplus"
+#endif
+#ifndef NDEBUG
+			    ".debug"
+#endif
+#if !defined(__clang__) && !defined(__INTEL_COMPILER) && defined(__GNUC__)
+			    ".gcc-" STRINGIFY(__GNUC__)
+#if __GNUC_MINOR__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__GNUC_MINOR__)
+#endif
+#ifdef __INTEL_COMPILER
+			    ".icc-" STRINGIFY(__INTEL_COMPILER)
+#endif
+#ifdef TCL_MEM_DEBUG
+			    ".memdebug"
+#endif
+#if defined(_MSC_VER)
+			    ".msvc-" STRINGIFY(_MSC_VER)
+#endif
+#ifdef USE_NMAKE
+			    ".nmake"
+#endif
+#ifndef TCL_CFG_OPTIMIZED
+			    ".no-optimize"
+#endif
+#ifdef __OBJC__
+			    ".objective-c"
+#if defined(__cplusplus)
+			    "plusplus"
+#endif
+#endif
+#ifdef TCL_CFG_PROFILED
+			    ".profile"
+#endif
+#ifdef PURIFY
+			    ".purify"
+#endif
+#ifdef STATIC_BUILD
+			    ".static"
+#endif
+		), NULL);
     }
 
     /* Provide the TDBC package */
 
     if (Tcl_PkgProvideEx(interp, PACKAGE_NAME, PACKAGE_VERSION,
-			 (ClientData) &tdbcStubs) == TCL_ERROR) {
+			 (void *) &tdbcStubs) == TCL_ERROR) {
 	return TCL_ERROR;
     }
 

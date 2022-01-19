@@ -86,7 +86,7 @@ proc start_viewer {} {
 
 set curRow 1
 set curCol 0
-grid columnconfigure .img 1 -weight 1 
+grid columnconfigure .img 1 -weight 1
 
 proc update_animated_gif {w option num} {
     global imgPriv

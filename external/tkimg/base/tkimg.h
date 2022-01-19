@@ -70,6 +70,21 @@ typedef int boolean;
 #   define TK_PHOTO_COMPOSITE_SET 1
 #endif
 
+#ifndef JOIN
+#  define JOIN(a,b) JOIN1(a,b)
+#  define JOIN1(a,b) a##b
+#endif
+
+#ifndef TCL_UNUSED
+#   if defined(__cplusplus)
+#	define TCL_UNUSED(T) T
+#   elif defined(__GNUC__) && (__GNUC__ > 2)
+#	define TCL_UNUSED(T) T JOIN(dummy, __LINE__) __attribute__((unused))
+#   else
+#	define TCL_UNUSED(T) T JOIN(dummy, __LINE__)
+#   endif
+#endif
+
 #include "tkimgDecls.h"
 
 #ifdef __cplusplus
@@ -114,7 +129,7 @@ MODULE_SCOPE int tkimg_initialized;
 /* Maximum number of channels storable in a photo image. */
 #define IMG_MAX_CHANNELS     4
 
-/* Definitions for mapping short or float images into unsigned char 
+/* Definitions for mapping short or float images into unsigned char
  * photo images. See tkimgMap.c for corresponding functions.
  */
 

@@ -125,9 +125,7 @@
 
 /*
  * Fallback in case Tk is linked against a Tcl version not having TIP #585
- * (TCL_INDEX_TEMP_TABLE flag). This allows to use the internal
- * INDEX_TEMP_TABLE flag of Tcl. However this is rather ugly and not robust
- * since nothing prevents Tcl from changing the value of its internal flags!
+ * (TCL_INDEX_TEMP_TABLE).
  */
 
 #if !defined(TCL_INDEX_TEMP_TABLE)
@@ -148,6 +146,12 @@
 #   define TCL_LL_MODIFIER	"I64"
 #else
 #   define TCL_LL_MODIFIER	"ll"
+#endif
+
+#if TCL_MAJOR_VERSION > 8
+#   define TKSIZET_MODIFIER TCL_Z_MODIFIER
+#else
+#   define TKSIZET_MODIFIER ""
 #endif
 
 /*
@@ -391,8 +395,14 @@ typedef struct TkDisplay {
 				 * by that container. */
     int geomInit;
 
-#define TkGetContainer(tkwin) (((TkWindow *)tkwin)->maintainerPtr != NULL ? \
-    ((TkWindow *)tkwin)->maintainerPtr : ((TkWindow *)tkwin)->parentPtr)
+    /*
+     * Information used by tkGrid.c, tkPack.c, tkPlace.c, tkPointer.c,
+     * and ttkMacOSXTheme.c:
+     */
+
+#define TkGetContainer(tkwin) (Tk_TopWinHierarchy((TkWindow *)tkwin) ? NULL : \
+	(((TkWindow *)tkwin)->maintainerPtr != NULL ? \
+	 ((TkWindow *)tkwin)->maintainerPtr : ((TkWindow *)tkwin)->parentPtr))
 
     /*
      * Information used by tkGet.c only:
@@ -910,6 +920,14 @@ typedef struct TkWindow {
     int ximGeneration;          /* Used to invalidate XIC */
 #endif /* TK_USE_INPUT_METHODS */
 } TkWindow;
+
+/*
+ * String tables:
+ */
+
+MODULE_SCOPE const char *const tkAnchorStrings[];
+MODULE_SCOPE const char *const tkReliefStrings[];
+MODULE_SCOPE const char *const tkJustifyStrings[];
 
 /*
  * Real definition of some events. Note that these events come from outside

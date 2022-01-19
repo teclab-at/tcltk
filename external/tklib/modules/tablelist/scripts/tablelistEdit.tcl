@@ -7,7 +7,7 @@
 #   - Private procedures implementing the interactive cell editing
 #   - Private procedures used in bindings related to interactive cell editing
 #
-# Copyright (c) 2003-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2003-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 #
@@ -2083,8 +2083,10 @@ proc tablelist::doFinishEditing {win {destroy 1}} {
 	    updateViewWhenIdle $win
 	}
 
-	set userData [list $row $col]
-	genVirtualEvent $win <<TablelistCellUpdated>> $userData
+	if {[string compare $text $data(origEditText)] != 0} {
+	    set userData [list $row $col]
+	    genVirtualEvent $win <<TablelistCellUpdated>> $userData
+	}
     }
 
     return $result

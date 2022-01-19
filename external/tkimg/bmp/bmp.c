@@ -70,11 +70,11 @@ static void putint(tkimg_MFile *handle, int i);
 static int
 ChnMatch(
     Tcl_Channel chan,
-    const char *fileName,
-    Tcl_Obj *format,
+    TCL_UNUSED(const char *),
+    TCL_UNUSED(Tcl_Obj *),
     int *widthPtr,
     int *heightPtr,
-    Tcl_Interp *interp
+    TCL_UNUSED(Tcl_Interp *)
 ) {
     tkimg_MFile handle;
 
@@ -88,10 +88,10 @@ ChnMatch(
 static int
 ObjMatch(
     Tcl_Obj *data,
-    Tcl_Obj *format,
+    TCL_UNUSED(Tcl_Obj *),
     int *widthPtr,
     int *heightPtr,
-    Tcl_Interp *interp
+    TCL_UNUSED(Tcl_Interp *)
 ) {
     tkimg_MFile handle;
 
@@ -106,8 +106,8 @@ static int
 ChnRead(
     Tcl_Interp *interp,
     Tcl_Channel chan,
-    const char *fileName,
-    Tcl_Obj *format,
+    TCL_UNUSED(const char *),
+    TCL_UNUSED(Tcl_Obj *),
     Tk_PhotoHandle imageHandle,
     int destX, int destY,
     int width, int height,
@@ -126,7 +126,7 @@ static int
 ObjRead(
     Tcl_Interp *interp,
     Tcl_Obj *data,
-    Tcl_Obj *format,
+    TCL_UNUSED(Tcl_Obj *),
     Tk_PhotoHandle imageHandle,
     int destX, int destY,
     int width, int height,
@@ -274,7 +274,7 @@ CommonMatch(
 
     if (colorMap) {
         if (c > 36) {
-            if (tkimg_Read2(handle, (char *) buf, c - 36) != c - 36 )
+            if (tkimg_Read2(handle, (char *) buf, c - 36) != (size_t)c - 36 )
                 return 0;
         }
         if (compression == BI_BITFIELDS) {
@@ -308,7 +308,7 @@ CommonMatch(
                 return 0;
         }
         if (offBits > 0) {
-            if (tkimg_Read2(handle, (char *) buf, offBits) != offBits)
+            if (tkimg_Read2(handle, (char *) buf, offBits) != (size_t)offBits)
                 return 0;
         }
         if (numCols) {
@@ -373,9 +373,9 @@ CommonRead(
 
     bytesPerLine = ((numBits * fileWidth + 31)/32)*4;
 
-    /* printf("bytesPerLine = %d numBits=%d (%dx%d)\n", 
+    /* printf("bytesPerLine = %d numBits=%d (%dx%d)\n",
      *        bytesPerLine, numBits, width, height);
-     */ 
+     */
     block.pixelSize = 3;
     block.pitch = width * 3;
     block.width = width;
@@ -660,7 +660,7 @@ CommonWrite(
     int resX=75*39, resY=75*39;
     int objc = 0;
     Tcl_Obj **objv = NULL;
- 
+
     /* Decode resolution parameter -resolution List */
     if (tkimg_ListObjGetElements(interp, format, &objc, &objv) != TCL_OK) {
         return TCL_ERROR;

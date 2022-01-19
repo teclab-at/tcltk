@@ -5,14 +5,14 @@ package require img::raw
 
 # Red Green Blue Cyan Magenta Yellow Magenta Black White
 set colorList {
-    "#FF0000" 
-    "#00FF00" 
-    "#0000FF" 
-    "#00FFFF" 
-    "#FF00FF" 
-    "#FFFF00" 
-    "#000000" 
-    "#FFFFFF" 
+    "#FF0000"
+    "#00FF00"
+    "#0000FF"
+    "#00FFFF"
+    "#FF00FF"
+    "#FFFF00"
+    "#000000"
+    "#FFFFFF"
 }
 
 set fmtList {

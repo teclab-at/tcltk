@@ -20,6 +20,7 @@
  */
 
 #include "tclThreadInt.h"
+#include "threadUuid.h"
 
 /*
  * Provide package version in build contexts which do not provide
@@ -27,7 +28,7 @@
  * files built as part of that shell. Example: basekits.
  */
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "2.8.7"
+#define PACKAGE_VERSION "2.8.8"
 #endif
 
 /*
@@ -343,9 +344,6 @@ static void
 ThreadFreeProc(ClientData clientData);
 
 static void
-ThreadIdleProc(ClientData clientData);
-
-static void
 ThreadExitProc(ClientData clientData);
 
 static void
@@ -429,6 +427,11 @@ static Tcl_ObjCmdProc ThreadAttachObjCmd;
 static Tcl_ObjCmdProc ThreadCancelObjCmd;
 #endif
 
+#ifndef STRINGIFY
+#  define STRINGIFY(x) STRINGIFY1(x)
+#  define STRINGIFY1(x) #x
+#endif
+
 static const char *
 ThreadInit(
     Tcl_Interp *interp /* The current Tcl interpreter */
@@ -500,7 +503,65 @@ ThreadInit(
 
     TpoolInit(interp);
 
-    return PACKAGE_VERSION;
+    return PACKAGE_VERSION
+	    "+" STRINGIFY(THREAD_VERSION_UUID)
+#if defined(__clang__) && defined(__clang_major__)
+	    ".clang-" STRINGIFY(__clang_major__)
+#if __clang_minor__ < 10
+	    "0"
+#endif
+	    STRINGIFY(__clang_minor__)
+#endif
+#if defined(__cplusplus) && !defined(__OBJC__)
+	    ".cplusplus"
+#endif
+#ifndef NDEBUG
+	    ".debug"
+#endif
+#if !defined(__clang__) && !defined(__INTEL_COMPILER) && defined(__GNUC__)
+	    ".gcc-" STRINGIFY(__GNUC__)
+#if __GNUC_MINOR__ < 10
+	    "0"
+#endif
+	    STRINGIFY(__GNUC_MINOR__)
+#endif
+#ifdef __INTEL_COMPILER
+	    ".icc-" STRINGIFY(__INTEL_COMPILER)
+#endif
+#ifdef HAVE_GDBM
+	    ".gdbm"
+#endif
+#ifdef HAVE_LMDB
+	    ".lmdb"
+#endif
+#ifdef TCL_MEM_DEBUG
+	    ".memdebug"
+#endif
+#if defined(_MSC_VER)
+	    ".msvc-" STRINGIFY(_MSC_VER)
+#endif
+#ifdef USE_NMAKE
+	    ".nmake"
+#endif
+#ifndef TCL_CFG_OPTIMIZED
+	    ".no-optimize"
+#endif
+#ifdef __OBJC__
+	    ".objective-c"
+#if defined(__cplusplus)
+	    "plusplus"
+#endif
+#endif
+#ifdef TCL_CFG_PROFILED
+	    ".profile"
+#endif
+#ifdef PURIFY
+	    ".purify"
+#endif
+#ifdef STATIC_BUILD
+	    ".static"
+#endif
+	    ;
 }
 
 
@@ -525,12 +586,17 @@ Thread_Init(
     Tcl_Interp *interp /* The current Tcl interpreter */
 ) {
     const char *version = ThreadInit(interp);
+    Tcl_CmdInfo info;
 
     if (version == NULL) {
         return TCL_ERROR;
     }
 
-    return Tcl_PkgProvideEx(interp, "Thread", version, NULL);
+    if (Tcl_GetCommandInfo(interp, "::tcl::build-info", &info)) {
+	Tcl_CreateObjCommand(interp, "::thread::build-info",
+		info.objProc, (void *)version, NULL);
+    }
+    return Tcl_PkgProvideEx(interp, "Thread", PACKAGE_VERSION, NULL);
 }
 
 /*
@@ -2710,21 +2776,22 @@ ThreadSend(
     }
 
     /*
-     * Short circuit sends to ourself.
+     * Short circuit sends to ourself (synchronously only).
      */
 
-    if (thrId == Tcl_GetCurrentThread()) {
+    if (thrId == Tcl_GetCurrentThread() && (flags & THREAD_SEND_WAIT)) {
         Tcl_MutexUnlock(&threadMutex);
-        if ((flags & THREAD_SEND_WAIT)) {
-            code = (*send->execProc)(interp, send);
-            ThreadFreeProc(send);
-            return code;
-        } else {
-            send->interp = interp;
-            Tcl_Preserve(send->interp);
-            Tcl_DoWhenIdle((Tcl_IdleProc*)ThreadIdleProc, send);
-            return TCL_OK;
-        }
+
+	if (!(flags & THREAD_SEND_HEAD)) {
+	    /* 
+	     * Be sure all already queued events are processed before this event
+	     */
+	    while ( Tcl_DoOneEvent((TCL_ALL_EVENTS & ~TCL_IDLE_EVENTS)|TCL_DONT_WAIT) ) {};
+	}
+	/* call it synchronously right now */
+	code = (*send->execProc)(interp, (ClientData)send);
+	ThreadFreeProc((ClientData)send);
+	return code;
     }
 
     /*
@@ -3474,34 +3541,6 @@ ThreadSetOption(
     Tcl_MutexUnlock(&threadMutex);
 
     return TCL_OK;
-}
-
-/*
- *----------------------------------------------------------------------
- *
- * ThreadIdleProc --
- *
- * Results:
- *
- * Side effects.
- *
- *----------------------------------------------------------------------
- */
-
-static void
-ThreadIdleProc(
-    ClientData clientData
-) {
-    int ret;
-    ThreadSendData *sendPtr = (ThreadSendData*)clientData;
-
-    ret = (*sendPtr->execProc)(sendPtr->interp, sendPtr);
-    if (ret != TCL_OK) {
-        ThreadErrorProc(sendPtr->interp);
-    }
-
-    Tcl_Release(sendPtr->interp);
-    ThreadFreeProc(clientData);
 }
 
 /*

@@ -71,7 +71,7 @@ build directory. Instead run
 in the sub directories of the build directory which contain the
 requested packages, and their dependencies!
 
-Note, that target install also builds the documentation based on 
+Note, that target install also builds the documentation based on
 Tcl script dtplite. To build and install without documentation, use
 
     make install-libraries
@@ -151,14 +151,14 @@ not included when doing a "package require Img". These must be explicitely
 loaded via a "package require img::FMT".
 img::dted reads Digital Terrain Elevation Data and transforms the elevation
 data into photo images.
-img::flir reads FLIR files and transforms the temperature information 
+img::flir reads FLIR files and transforms the temperature information
 into photo images.
 img::raw can transform any form of binary matrix data
 (8-bit and 16-bit integer, 32-bit float) into a photo image.
 As DTED and RAW files do not have a magic key or other identifier at the
-beginning of the file, it is not possible to automatically detect the 
+beginning of the file, it is not possible to automatically detect the
 format by reading some file header.
- 
+
 CONFIGURE
 
 The source distributions have "configure", which  has the following
@@ -229,7 +229,7 @@ PLATFORMS
         Windows  (MSys/MinGW, Visual Studio C++)
         Darwin   (gcc)
 
-    Other machines and OS's should work too. 
+    Other machines and OS's should work too.
 
 Feedback about other OS's and compilers is appreciated. Please
 help us in making this package better.

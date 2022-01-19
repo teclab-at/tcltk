@@ -385,19 +385,23 @@ Tcl_RegexpObjCmd(
 			end--;
 		    }
 		} else {
-		    start = -1;
-		    end = -1;
+		    start = TCL_INDEX_NONE;
+		    end = TCL_INDEX_NONE;
 		}
 
-		TclNewIntObj(objs[0], start);
-		TclNewIntObj(objs[1], end);
+		TclNewIndexObj(objs[0], start);
+		TclNewIndexObj(objs[1], end);
 
 		newPtr = Tcl_NewListObj(2, objs);
 	    } else {
 		if (i <= info.nsubs) {
-		    newPtr = Tcl_GetRange(objPtr,
-			    offset + info.matches[i].start,
-			    offset + info.matches[i].end - 1);
+		    if (info.matches[i].end <= 0) {
+			TclNewObj(newPtr);
+		    } else {
+			newPtr = Tcl_GetRange(objPtr,
+				offset + info.matches[i].start,
+				offset + info.matches[i].end - 1);
+		    }
 		} else {
 		    TclNewObj(newPtr);
 		}
@@ -1910,7 +1914,7 @@ StringIsCmd(
 
  str_is_done:
     if ((result == 0) && (failVarObj != NULL)) {
-	TclNewIntObj(objPtr, failat);
+	TclNewIndexObj(objPtr, failat);
 	if (Tcl_ObjSetVar2(interp, failVarObj, NULL, objPtr, TCL_LEAVE_ERR_MSG) == NULL) {
 	    return TCL_ERROR;
 	}
@@ -2300,13 +2304,7 @@ StringRangeCmd(
 	return TCL_ERROR;
     }
 
-    if (first < 0) {
-	first = 0;
-    }
-    if (last >= length) {
-	last = length;
-    }
-    if (last >= first) {
+    if (last >= 0) {
 	Tcl_SetObjResult(interp, Tcl_GetRange(objv[1], first, last));
     }
     return TCL_OK;
@@ -2543,7 +2541,7 @@ StringStartCmd(
 	    cur += 1;
 	}
     }
-    TclNewIntObj(obj, cur);
+    TclNewIndexObj(obj, cur);
     Tcl_SetObjResult(interp, obj);
     return TCL_OK;
 }
@@ -2604,7 +2602,7 @@ StringEndCmd(
     } else {
 	cur = length;
     }
-    TclNewIntObj(obj, cur);
+    TclNewIndexObj(obj, cur);
     Tcl_SetObjResult(interp, obj);
     return TCL_OK;
 }
@@ -3778,10 +3776,10 @@ TclNRSwitchObjCmd(
 		Tcl_Obj *rangeObjAry[2];
 
 		if (info.matches[j].end > 0) {
-		    TclNewIntObj(rangeObjAry[0], info.matches[j].start);
-		    TclNewIntObj(rangeObjAry[1], info.matches[j].end-1);
+		    TclNewIndexObj(rangeObjAry[0], info.matches[j].start);
+		    TclNewIndexObj(rangeObjAry[1], info.matches[j].end-1);
 		} else {
-		    TclNewIntObj(rangeObjAry[1], TCL_INDEX_NONE);
+		    TclNewIndexObj(rangeObjAry[1], TCL_INDEX_NONE);
 		    rangeObjAry[0] = rangeObjAry[1];
 		}
 

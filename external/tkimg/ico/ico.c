@@ -130,7 +130,7 @@ static Boln readUByte (tkimg_MFile *handle, UByte *b)
 
 #if _MSC_VER <= 1600
 /* Switch off optimization for the next 2 functions
-   for Visual Studio versions <= 2010 */ 
+   for Visual Studio versions <= 2010 */
 #pragma optimize("g", off)
 #endif
 static Boln readUShort (tkimg_MFile *handle, UShort *s)

@@ -21,7 +21,7 @@
 #include <tcl.h>
 #include <tclOO.h>
 #include <tdbc.h>
-
+#include "tdbcPostgresUuid.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -231,7 +231,7 @@ static const struct {
  */
 
 typedef struct PerInterpData {
-    int refCount;		    /* Reference count */
+    size_t refCount;		    /* Reference count */
     Tcl_Obj* literals[LIT__END];    /* Literal pool */
     Tcl_HashTable typeNumHash;	    /* Lookup table for type numbers */
 } PerInterpData;
@@ -242,7 +242,7 @@ typedef struct PerInterpData {
 #define DecrPerInterpRefCount(x)		\
     do {					\
 	PerInterpData* _pidata = x;		\
-	if ((--(_pidata->refCount)) <= 0) {	\
+	if (_pidata->refCount-- <= 1) {	\
 	    DeletePerInterpData(_pidata);	\
 	}					\
     } while(0)
@@ -256,7 +256,7 @@ typedef struct PerInterpData {
  */
 
 typedef struct ConnectionData {
-    int refCount;		/* Reference count. */
+    size_t refCount;		/* Reference count. */
     PerInterpData* pidata;	/* Per-interpreter data */
     PGconn* pgPtr;		/* Postgres  connection handle */
     int stmtCounter;		/* Counter for naming statements */
@@ -279,7 +279,7 @@ typedef struct ConnectionData {
 #define DecrConnectionRefCount(x)		\
     do {					\
 	ConnectionData* conn = x;		\
-	if ((--(conn->refCount)) <= 0) {	\
+	if (conn->refCount-- <= 1) {	\
 	    DeleteConnection(conn);		\
 	}					\
     } while(0)
@@ -294,7 +294,7 @@ typedef struct ConnectionData {
  */
 
 typedef struct StatementData {
-    int refCount;		/* Reference count */
+    size_t refCount;		/* Reference count */
     ConnectionData* cdata;	/* Data for the connection to which this
 				 * statement pertains. */
     Tcl_Obj* subVars;	        /* List of variables to be substituted, in the
@@ -318,7 +318,7 @@ typedef struct StatementData {
 #define DecrStatementRefCount(x)		\
     do {					\
 	StatementData* stmt = (x);		\
-	if (--(stmt->refCount) <= 0) {		\
+	if (stmt->refCount-- <= 1) {		\
 	    DeleteStatement(stmt);		\
 	}					\
     } while(0)
@@ -353,7 +353,7 @@ typedef struct ParamData {
  */
 
 typedef struct ResultSetData {
-    int refCount;		/* Reference count */
+    size_t refCount;		/* Reference count */
     StatementData* sdata;	/* Statement that generated this result set */
     PGresult* execResult;	/* Structure containing result of prepared statement execution */
     char* stmtName;		/* Name identyfing the statement */
@@ -1305,7 +1305,7 @@ ConnectionConstructor(
     cdata->isolation = ISOL_NONE;
     cdata->readOnly = 0;
     IncrPerInterpRefCount(pidata);
-    Tcl_ObjectSetMetadata(thisObject, &connectionDataType, (ClientData) cdata);
+    Tcl_ObjectSetMetadata(thisObject, &connectionDataType, cdata);
 
     /* Configure the connection */
 
@@ -2303,7 +2303,7 @@ StatementConstructor(
 
     /* Attach the current statement data as metadata to the current object */
 
-    Tcl_ObjectSetMetadata(thisObject, &statementDataType, (ClientData) sdata);
+    Tcl_ObjectSetMetadata(thisObject, &statementDataType, sdata);
 
     return TCL_OK;
 
@@ -2714,7 +2714,7 @@ ResultSetConstructor(
     rdata->execResult = NULL;
     rdata->rowCount = 0;
     IncrStatementRefCount(sdata);
-    Tcl_ObjectSetMetadata(thisObject, &resultSetDataType, (ClientData) rdata);
+    Tcl_ObjectSetMetadata(thisObject, &resultSetDataType, rdata);
 
     /*
      * Find a statement handle that we can use to execute the SQL code.
@@ -3241,6 +3241,11 @@ ResultSetRowcountMethod(
  *-----------------------------------------------------------------------------
  */
 
+#ifndef STRINGIFY
+#  define STRINGIFY(x) STRINGIFY1(x)
+#  define STRINGIFY1(x) #x
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
@@ -3254,6 +3259,7 @@ Tdbcpostgres_Init(
     Tcl_Object curClassObject;  /* Tcl_Object representing the current class */
     Tcl_Class curClass;		/* Tcl_Class representing the current class */
     int i;
+    Tcl_CmdInfo info;
 
     if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) {
 	return TCL_ERROR;
@@ -3263,6 +3269,63 @@ Tdbcpostgres_Init(
     }
     if (Tdbc_InitStubs(interp) == NULL) {
 	return TCL_ERROR;
+    }
+
+    if (Tcl_GetCommandInfo(interp, "::tcl::build-info", &info)) {
+	Tcl_CreateObjCommand(interp, "::tdbc::postgres::build-info",
+		info.objProc, (void *)(
+		    PACKAGE_VERSION "+" STRINGIFY(TDBC_POSTGRES_VERSION_UUID)
+#if defined(__clang__) && defined(__clang_major__)
+			    ".clang-" STRINGIFY(__clang_major__)
+#if __clang_minor__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__clang_minor__)
+#endif
+#if defined(__cplusplus) && !defined(__OBJC__)
+			    ".cplusplus"
+#endif
+#ifndef NDEBUG
+			    ".debug"
+#endif
+#if !defined(__clang__) && !defined(__INTEL_COMPILER) && defined(__GNUC__)
+			    ".gcc-" STRINGIFY(__GNUC__)
+#if __GNUC_MINOR__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__GNUC_MINOR__)
+#endif
+#ifdef __INTEL_COMPILER
+			    ".icc-" STRINGIFY(__INTEL_COMPILER)
+#endif
+#ifdef TCL_MEM_DEBUG
+			    ".memdebug"
+#endif
+#if defined(_MSC_VER)
+			    ".msvc-" STRINGIFY(_MSC_VER)
+#endif
+#ifdef USE_NMAKE
+			    ".nmake"
+#endif
+#ifndef TCL_CFG_OPTIMIZED
+			    ".no-optimize"
+#endif
+#ifdef __OBJC__
+			    ".objective-c"
+#if defined(__cplusplus)
+			    "plusplus"
+#endif
+#endif
+#ifdef TCL_CFG_PROFILED
+			    ".profile"
+#endif
+#ifdef PURIFY
+			    ".purify"
+#endif
+#ifdef STATIC_BUILD
+			    ".static"
+#endif
+		), NULL);
     }
 
     /* Provide the current package */
@@ -3317,7 +3380,7 @@ Tdbcpostgres_Init(
 	nameObj = Tcl_NewStringObj(ConnectionMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
 	Tcl_NewMethod(interp, curClass, nameObj, 1, ConnectionMethods[i],
-			   (ClientData) NULL);
+			   NULL);
 	Tcl_DecrRefCount(nameObj);
     }
 
@@ -3337,7 +3400,7 @@ Tdbcpostgres_Init(
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
 					  &StatementConstructorType,
-					  (ClientData) NULL));
+					  NULL));
 
     /* Attach the methods to the 'statement' class */
 
@@ -3345,7 +3408,7 @@ Tdbcpostgres_Init(
 	nameObj = Tcl_NewStringObj(StatementMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
 	Tcl_NewMethod(interp, curClass, nameObj, 1, StatementMethods[i],
-			   (ClientData) NULL);
+			   NULL);
 	Tcl_DecrRefCount(nameObj);
     }
 
@@ -3365,7 +3428,7 @@ Tdbcpostgres_Init(
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
 					  &ResultSetConstructorType,
-					  (ClientData) NULL));
+					  NULL));
 
     /* Attach the methods to the 'resultSet' class */
 
@@ -3373,7 +3436,7 @@ Tdbcpostgres_Init(
 	nameObj = Tcl_NewStringObj(ResultSetMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
 	Tcl_NewMethod(interp, curClass, nameObj, 1, ResultSetMethods[i],
-			   (ClientData) NULL);
+			   NULL);
 	Tcl_DecrRefCount(nameObj);
     }
     nameObj = Tcl_NewStringObj("nextlist", -1);

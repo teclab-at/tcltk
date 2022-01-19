@@ -1485,14 +1485,15 @@ Tcl_UtfToExternal(
  *---------------------------------------------------------------------------
  */
 #undef Tcl_FindExecutable
-void
+const char *
 Tcl_FindExecutable(
     const char *argv0)		/* The value of the application's argv[0]
 				 * (native). */
 {
-    Tcl_InitSubsystems();
+    const char *version = Tcl_InitSubsystems();
     TclpSetInitialEncodings();
     TclpFindExecutable(argv0);
+    return version;
 }
 
 /*
@@ -2321,9 +2322,6 @@ UtfToUtfProc(
 			result = TCL_CONVERT_UNKNOWN;
 			src = saveSrc;
 			break;
-		    }
-		    if (!(flags & TCL_ENCODING_MODIFIED)) {
-			ch = 0xFFFD;
 		    }
 		cesu8:
 		    *dst++ = (char) (((ch >> 12) | 0xE0) & 0xEF);

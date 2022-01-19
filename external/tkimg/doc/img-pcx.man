@@ -25,16 +25,16 @@ contain any of the special options listed in section
   1-bit pixels: Black and White.
   8-bit pixels: Grayscale or indexed.
  24-bit pixels: True-color (RGB, each channel 8 bit).
- 
+
  List of currently supported features:
- 
+
  Type   |     Read      |     Write     |
         | -file | -data | -file | -data |
  ----------------------------------------
   1-bit | Yes   | Yes   | No    | No    |
   8-bit | Yes   | Yes   | No    | No    |
  24-bit | Yes   | Yes   | Yes   | Yes   |
- 
+
  All images types may be either uncompressed or run-length encoded.
 [example_end]
 

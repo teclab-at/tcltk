@@ -3,7 +3,7 @@
 #==============================================================================
 # Demonstrates the use of the scrollutil::scrollednotebook widget.
 #
-# Copyright (c) 2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2021-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 package require scrollutil_tile
@@ -47,17 +47,6 @@ foreach fileName [lsort [glob *.tcl]] {
     $nb add $sa -text $fileName -image fileImg -compound left \
 		-padding $panePadding
 }
-
-#
-# Set the scrollednotebook's width.  Take into account that in the aqua
-# theme the -padding option of the TNotebook style is set to {18 8 18 17}
-# and the panes are drawn with a hard-coded internal padding of {9 5 9 9}.
-#
-update idletasks
-set width [expr {[winfo reqwidth $sa] + [winfo reqwidth $sa.vsb]}]
-incr width [expr {$ttk::currentTheme eq "aqua" ?
-	          2*27 : 2*[winfo pixels . 7p] + 4}]
-$nb configure -width $width
 
 proc condCopySel {nb widget} {
     set txt $widget.txt
@@ -104,3 +93,17 @@ set b [ttk::button $f.b -text "Close" -command exit]
 pack $b  -side bottom -pady {0 7p}
 pack $nb -side top -expand yes -fill both -padx 7p -pady 7p
 pack $f  -expand yes -fill both
+
+#
+# Set the scrollednotebook's width.  Take into account that in the aqua
+# theme the -padding option of the TNotebook style is set to {18 8 18 17}
+# and the panes are drawn with a hard-coded internal padding of {9 5 9 9}.
+#
+after 50 [list configNb $nb $sa]
+
+proc configNb {nb sa} {
+    set width [expr {[winfo reqwidth $sa] + [winfo reqwidth $sa.vsb]}]
+    incr width [expr {$ttk::currentTheme eq "aqua" ?
+		      2*27 : 2*[winfo pixels . 7p] + 4}]
+    $nb configure -width $width
+}

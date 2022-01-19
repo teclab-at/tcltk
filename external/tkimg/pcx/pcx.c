@@ -461,7 +461,7 @@ static int ParseFormatOpts(
     FMTOPT *opts
 ) {
     static const char *const pcxOptions[] = {
-        "-compression", "-verbose", NULL 
+        "-compression", "-verbose", NULL
     };
     int objc, i, index;
     char *optionStr;

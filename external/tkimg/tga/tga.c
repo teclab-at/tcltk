@@ -494,7 +494,7 @@ static Boln tgaWriteScan(Tcl_Interp *interp, tkimg_MFile *handle,
             tf->red++;
             tf->matte++;
         }
-    } else { 
+    } else {
         /* Run-length Compression */
         red_end = tf->red + 1;
         green_end = tf->green + 1;
@@ -526,7 +526,7 @@ static Boln tgaWriteScan(Tcl_Interp *interp, tkimg_MFile *handle,
                 tf->green = green_end;
                 tf->blue  = blue_end;
                 tf->matte = matte_end;
-            } else { 
+            } else {
                 /* Found a run of uncompressable data */
                 while (red_end < stop &&
                        ((red_end + 1 >= stop ||

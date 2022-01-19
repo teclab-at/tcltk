@@ -1,6 +1,6 @@
 README: tdbcpostgres
 
-    This is the 1.1.3 source distribution of the driver for Tcl
+    This is the 1.1.4 source distribution of the driver for Tcl
     Database Connectivity (TDBC) to access Postgres databases. TDBC and
     its drivers are available from a Fossil version control repository
     at http://tdbc.tcl.tk/

@@ -167,7 +167,7 @@ static int ObjMatch(
 
     name = tkimg_GetStringFromObj2(data, NULL);
 
-    if (interp && name && (name[0] == '.') ) { 
+    if (interp && name && (name[0] == '.') ) {
 	tkwin = Tk_MainWindow(interp);
 	if (tkwin == NULL) {
 	    return 0;
@@ -208,9 +208,9 @@ static int ObjMatch(
         if (!bmpCapture) {
             return bResult;
         }
-         
+
         ZeroMemory (bmpCapture, sizeof(BITMAPCAPTURE));
-         
+
         hWnd = Tk_GetHWND(Tk_WindowId(tkwin));
         if( ! hWnd ) {
             return bResult;

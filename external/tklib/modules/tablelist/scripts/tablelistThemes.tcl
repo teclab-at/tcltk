@@ -7,7 +7,7 @@
 #   - Private procedures related to tile themes
 #   - Private procedures related to global KDE configuration options
 #
-# Copyright (c) 2005-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2005-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 #
@@ -34,7 +34,7 @@ proc tablelist::setThemeDefaults {} {
     variable themeDefaults
 
     set currentTheme [mwutil::currentTheme]
-    variable isAwTheme \
+    set isAwTheme \
 	[llength [info commands ::ttk::theme::${currentTheme}::setTextColors]]
     if {$isAwTheme} {
 	awTheme $currentTheme

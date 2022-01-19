@@ -52,7 +52,8 @@ static Tk_PhotoImageFormat sImageFormat = {
 	ChnRead, /* fileReadProc */
 	ObjRead, /* stringReadProc */
 	ChnWrite, /* fileWriteProc */
-	StringWrite /* stringWriteProc */
+	StringWrite, /* stringWriteProc */
+	0
 };
 
 #ifdef SECOND_FORMAT
@@ -102,7 +103,8 @@ static Tk_PhotoImageFormat sImageFormatBeta = {
 	SECOND_CHNREAD, /* fileReadProc */
 	SECOND_OBJREAD, /* stringReadProc */
 	SECOND_CHNWRITE, /* fileWriteProc */
-	SECOND_STRWRITE /* stringWriteProc */
+	SECOND_STRWRITE, /* stringWriteProc */
+	0
 };
 
 #endif /* SECOND_FORMAT */

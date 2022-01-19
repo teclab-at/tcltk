@@ -23,7 +23,7 @@ contain any of the special options listed in section
 [section {TIFF OPTIONS}]
 
 The handler provides three options, one for reading from a TIFF image,
-the other two influencing the writing of such. 
+the other two influencing the writing of such.
 
 
 [list_begin definitions]

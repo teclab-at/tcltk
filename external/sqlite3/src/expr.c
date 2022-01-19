@@ -2457,7 +2457,7 @@ int sqlite3ExprCanBeNull(const Expr *p){
       return ExprHasProperty(p, EP_CanBeNull) ||
              p->y.pTab==0 ||  /* Reference to column of index on expression */
              (p->iColumn>=0
-              && ALWAYS(p->y.pTab->aCol!=0) /* Defense against OOM problems */
+              && p->y.pTab->aCol!=0 /* Possible due to prior error */
               && p->y.pTab->aCol[p->iColumn].notNull==0);
     default:
       return 1;
@@ -5888,7 +5888,7 @@ int sqlite3ExprCoveredByIndex(
 struct RefSrcList {
   sqlite3 *db;         /* Database connection used for sqlite3DbRealloc() */
   SrcList *pRef;       /* Looking for references to these tables */
-  int nExclude;        /* Number of tables to exclude from the search */
+  i64 nExclude;        /* Number of tables to exclude from the search */
   int *aiExclude;      /* Cursor IDs for tables to exclude from the search */
 };
 
@@ -5903,7 +5903,8 @@ struct RefSrcList {
 static int selectRefEnter(Walker *pWalker, Select *pSelect){
   struct RefSrcList *p = pWalker->u.pRefSrcList;
   SrcList *pSrc = pSelect->pSrc;
-  int i, j, *piNew;
+  i64 i, j;
+  int *piNew;
   if( pSrc->nSrc==0 ) return WRC_Continue;
   j = p->nExclude;
   p->nExclude += pSrc->nSrc;

@@ -20,7 +20,7 @@
 #include <tcl.h>
 #include <tclOO.h>
 #include <tdbc.h>
-
+#include "tdbcMysqlUuid.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -95,7 +95,7 @@ typedef struct PerInterpData {
 #define DecrPerInterpRefCount(x)		\
     do {					\
 	PerInterpData* _pidata = x;		\
-	if (((_pidata->refCount))-- <= 1) {	\
+	if (_pidata->refCount-- <= 1) {	\
 	    DeletePerInterpData(_pidata);	\
 	}					\
     } while(0)
@@ -136,7 +136,7 @@ typedef struct ConnectionData {
 #define DecrConnectionRefCount(x)		\
     do {					\
 	ConnectionData* conn = x;		\
-	if (((conn->refCount)--) <= 01) {	\
+	if (conn->refCount-- <= 1) {	\
 	    DeleteConnection(conn);		\
 	}					\
     } while(0)
@@ -377,10 +377,10 @@ static const char *const TclIsolationLevels[] = {
     NULL
 };
 static const char *const SqlIsolationLevels[] = {
-    "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED",
-    "SET TRANSACTION ISOLATION LEVEL READ COMMITTED",
-    "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",
-    "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE",
+    "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED",
+    "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
+    "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ",
+    "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE",
     NULL
 };
 enum IsolationLevel {
@@ -414,87 +414,87 @@ static Tcl_Obj* QueryConnectionOption(ConnectionData* cdata, Tcl_Interp* interp,
 				      int optionNum);
 static int ConfigureConnection(ConnectionData* cdata, Tcl_Interp* interp,
 			       int objc, Tcl_Obj *const objv[], int skip);
-static int ConnectionConstructor(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionConstructor(void *clientData, Tcl_Interp* interp,
 				 Tcl_ObjectContext context,
 				 int objc, Tcl_Obj *const objv[]);
-static int ConnectionBegintransactionMethod(ClientData clientData,
+static int ConnectionBegintransactionMethod(void *clientData,
 					    Tcl_Interp* interp,
 					    Tcl_ObjectContext context,
 					    int objc, Tcl_Obj *const objv[]);
-static int ConnectionColumnsMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionColumnsMethod(void *clientData, Tcl_Interp* interp,
 				  Tcl_ObjectContext context,
 				  int objc, Tcl_Obj *const objv[]);
-static int ConnectionCommitMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionCommitMethod(void *clientData, Tcl_Interp* interp,
 				  Tcl_ObjectContext context,
 				  int objc, Tcl_Obj *const objv[]);
-static int ConnectionConfigureMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionConfigureMethod(void *clientData, Tcl_Interp* interp,
 				     Tcl_ObjectContext context,
 				     int objc, Tcl_Obj *const objv[]);
-static int ConnectionEvaldirectMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionEvaldirectMethod(void *clientData, Tcl_Interp* interp,
 				      Tcl_ObjectContext context,
 				      int objc, Tcl_Obj *const objv[]);
-static int ConnectionNeedCollationInfoMethod(ClientData clientData,
+static int ConnectionNeedCollationInfoMethod(void *clientData,
 					     Tcl_Interp* interp,
 					     Tcl_ObjectContext context,
 					     int objc, Tcl_Obj *const objv[]);
-static int ConnectionRollbackMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionRollbackMethod(void *clientData, Tcl_Interp* interp,
 				    Tcl_ObjectContext context,
 				    int objc, Tcl_Obj *const objv[]);
-static int ConnectionSetCollationInfoMethod(ClientData clientData,
+static int ConnectionSetCollationInfoMethod(void *clientData,
 					    Tcl_Interp* interp,
 					    Tcl_ObjectContext context,
 					    int objc, Tcl_Obj *const objv[]);
-static int ConnectionTablesMethod(ClientData clientData, Tcl_Interp* interp,
+static int ConnectionTablesMethod(void *clientData, Tcl_Interp* interp,
 				  Tcl_ObjectContext context,
 				  int objc, Tcl_Obj *const objv[]);
 
-static void DeleteConnectionMetadata(ClientData clientData);
+static void DeleteConnectionMetadata(void *clientData);
 static void DeleteConnection(ConnectionData* cdata);
-static int CloneConnection(Tcl_Interp* interp, ClientData oldClientData,
-			   ClientData* newClientData);
+static int CloneConnection(Tcl_Interp* interp, void *oldClientData,
+			   void **newClientData);
 
 static StatementData* NewStatement(ConnectionData* cdata);
 static MYSQL_STMT* AllocAndPrepareStatement(Tcl_Interp* interp,
 					    StatementData* sdata);
 static Tcl_Obj* ResultDescToTcl(MYSQL_RES* resultDesc, int flags);
 
-static int StatementConstructor(ClientData clientData, Tcl_Interp* interp,
+static int StatementConstructor(void *clientData, Tcl_Interp* interp,
 				Tcl_ObjectContext context,
 				int objc, Tcl_Obj *const objv[]);
-static int StatementParamtypeMethod(ClientData clientData, Tcl_Interp* interp,
+static int StatementParamtypeMethod(void *clientData, Tcl_Interp* interp,
 				    Tcl_ObjectContext context,
 				    int objc, Tcl_Obj *const objv[]);
-static int StatementParamsMethod(ClientData clientData, Tcl_Interp* interp,
+static int StatementParamsMethod(void *clientData, Tcl_Interp* interp,
 				 Tcl_ObjectContext context,
 				 int objc, Tcl_Obj *const objv[]);
 
-static void DeleteStatementMetadata(ClientData clientData);
+static void DeleteStatementMetadata(void *clientData);
 static void DeleteStatement(StatementData* sdata);
-static int CloneStatement(Tcl_Interp* interp, ClientData oldClientData,
-			  ClientData* newClientData);
+static int CloneStatement(Tcl_Interp* interp, void *oldClientData,
+			  void **newClientData);
 
-static int ResultSetConstructor(ClientData clientData, Tcl_Interp* interp,
+static int ResultSetConstructor(void *clientData, Tcl_Interp* interp,
 				Tcl_ObjectContext context,
 				int objc, Tcl_Obj *const objv[]);
-static int ResultSetColumnsMethod(ClientData clientData, Tcl_Interp* interp,
+static int ResultSetColumnsMethod(void *clientData, Tcl_Interp* interp,
 				  Tcl_ObjectContext context,
 				  int objc, Tcl_Obj *const objv[]);
-static int ResultSetNextrowMethod(ClientData clientData, Tcl_Interp* interp,
+static int ResultSetNextrowMethod(void *clientData, Tcl_Interp* interp,
 				  Tcl_ObjectContext context,
 				  int objc, Tcl_Obj *const objv[]);
-static int ResultSetRowcountMethod(ClientData clientData, Tcl_Interp* interp,
+static int ResultSetRowcountMethod(void *clientData, Tcl_Interp* interp,
 				   Tcl_ObjectContext context,
 				   int objc, Tcl_Obj *const objv[]);
 
-static void DeleteResultSetMetadata(ClientData clientData);
+static void DeleteResultSetMetadata(void *clientData);
 static void DeleteResultSet(ResultSetData* rdata);
-static int CloneResultSet(Tcl_Interp* interp, ClientData oldClientData,
-			  ClientData* newClientData);
+static int CloneResultSet(Tcl_Interp* interp, void *oldClientData,
+			  void **newClientData);
 
 
-static void DeleteCmd(ClientData clientData);
+static void DeleteCmd(void *clientData);
 static int CloneCmd(Tcl_Interp* interp,
-		    ClientData oldMetadata, ClientData* newMetadata);
+		    void *oldMetadata, void **newMetadata);
 
 static void DeletePerInterpData(PerInterpData* pidata);
 
@@ -1386,7 +1386,7 @@ ConfigureConnection(
 
 static int
 ConnectionConstructor(
-    ClientData clientData,	/* Environment handle */
+    void *clientData,	/* Environment handle */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context, /* Object context */
     int objc,			/* Parameter count */
@@ -1410,7 +1410,7 @@ ConnectionConstructor(
     cdata->collationSizes = NULL;
     cdata->flags = 0;
     IncrPerInterpRefCount(pidata);
-    Tcl_ObjectSetMetadata(thisObject, &connectionDataType, (ClientData) cdata);
+    Tcl_ObjectSetMetadata(thisObject, &connectionDataType, cdata);
 
     /* Configure the connection */
 
@@ -1444,7 +1444,7 @@ ConnectionConstructor(
 
 static int
 ConnectionBegintransactionMethod(
-    ClientData dummy,	/* Unused */
+    void *dummy,	/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -1509,7 +1509,7 @@ ConnectionBegintransactionMethod(
 
 static int
 ConnectionColumnsMethod(
-    ClientData dummy,	/* Completion type */
+    void *dummy,	/* Completion type */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -1612,7 +1612,7 @@ ConnectionColumnsMethod(
 
 static int
 ConnectionCommitMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -1688,7 +1688,7 @@ ConnectionCommitMethod(
  */
 
 static int ConnectionConfigureMethod(
-     ClientData dummy,
+     void *dummy,
      Tcl_Interp* interp,
      Tcl_ObjectContext objectContext,
      int objc,
@@ -1736,7 +1736,7 @@ static int ConnectionConfigureMethod(
 
 static int
 ConnectionEvaldirectMethod(
-    ClientData dummy,	     /* Unused */
+    void *dummy,	     /* Unused */
     Tcl_Interp* interp,		     /* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			     /* Parameter count */
@@ -1840,7 +1840,7 @@ ConnectionEvaldirectMethod(
 
 static int
 ConnectionNeedCollationInfoMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -1885,7 +1885,7 @@ ConnectionNeedCollationInfoMethod(
 
 static int
 ConnectionRollbackMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -1954,7 +1954,7 @@ ConnectionRollbackMethod(
 
 static int
 ConnectionSetCollationInfoMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2041,7 +2041,7 @@ ConnectionSetCollationInfoMethod(
 
 static int
 ConnectionTablesMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2119,7 +2119,7 @@ ConnectionTablesMethod(
 
 static void
 DeleteCmd (
-    ClientData clientData	/* Environment handle */
+    void *clientData	/* Environment handle */
 ) {
     PerInterpData* pidata = (PerInterpData*) clientData;
     DecrPerInterpRefCount(pidata);
@@ -2145,8 +2145,8 @@ DeleteCmd (
 static int
 CloneCmd(
     Tcl_Interp* dummy,		/* Tcl interpreter */
-    ClientData oldClientData,	/* Environment handle to be discarded */
-    ClientData* newClientData	/* New environment handle to be used */
+    void *oldClientData,	/* Environment handle to be discarded */
+    void **newClientData	/* New environment handle to be used */
 ) {
     (void)dummy;
 
@@ -2173,7 +2173,7 @@ CloneCmd(
 
 static void
 DeleteConnectionMetadata(
-    ClientData clientData	/* Instance data for the connection */
+    void *clientData	/* Instance data for the connection */
 ) {
     DecrConnectionRefCount((ConnectionData*)clientData);
 }
@@ -2214,8 +2214,8 @@ DeleteConnection(
 static int
 CloneConnection(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    ClientData metadata,	/* Metadata to be cloned */
-    ClientData* newMetaData	/* Where to put the cloned metadata */
+    void *metadata,	/* Metadata to be cloned */
+    void **newMetaData	/* Where to put the cloned metadata */
 ) {
     (void)metadata;
     (void)newMetaData;
@@ -2399,7 +2399,7 @@ ResultDescToTcl(
 
 static int
 StatementConstructor(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2525,7 +2525,7 @@ StatementConstructor(
 
     /* Attach the current statement data as metadata to the current object */
 
-    Tcl_ObjectSetMetadata(thisObject, &statementDataType, (ClientData) sdata);
+    Tcl_ObjectSetMetadata(thisObject, &statementDataType, sdata);
     return TCL_OK;
 
     /* On error, unwind all the resource allocations */
@@ -2561,7 +2561,7 @@ StatementConstructor(
 
 static int
 StatementParamsMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2650,7 +2650,7 @@ StatementParamsMethod(
 
 static int
 StatementParamtypeMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2782,7 +2782,7 @@ StatementParamtypeMethod(
 
 static void
 DeleteStatementMetadata(
-    ClientData clientData	/* Instance data for the connection */
+    void *clientData	/* Instance data for the connection */
 ) {
     DecrStatementRefCount((StatementData*)clientData);
 }
@@ -2832,8 +2832,8 @@ DeleteStatement(
 static int
 CloneStatement(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    ClientData metadata,	/* Metadata to be cloned */
-    ClientData* newMetaData	/* Where to put the cloned metadata */
+    void *metadata,	/* Metadata to be cloned */
+    void **newMetaData	/* Where to put the cloned metadata */
 ) {
     (void)metadata;
     (void)newMetaData;
@@ -2868,7 +2868,7 @@ CloneStatement(
 
 static int
 ResultSetConstructor(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2954,7 +2954,7 @@ ResultSetConstructor(
 	ckalloc(nColumns * sizeof(unsigned long));
     rdata->resultBindings = resultBindings = MysqlBindAlloc(nColumns);
     IncrStatementRefCount(sdata);
-    Tcl_ObjectSetMetadata(thisObject, &resultSetDataType, (ClientData) rdata);
+    Tcl_ObjectSetMetadata(thisObject, &resultSetDataType, rdata);
 
     /* Make bindings for all the result columns. Defer binding variable
      * length fields until first execution. */
@@ -3206,7 +3206,7 @@ ResultSetConstructor(
 
 static int
 ResultSetColumnsMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3260,7 +3260,7 @@ ResultSetColumnsMethod(
 
 static int
 ResultSetNextrowMethod(
-    ClientData clientData,	/* Not used */
+    void *clientData,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3444,7 +3444,7 @@ ResultSetNextrowMethod(
 
 static int
 ResultSetRowcountMethod(
-    ClientData dummy,	/* Not used */
+    void *dummy,	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3481,7 +3481,7 @@ ResultSetRowcountMethod(
 
 static void
 DeleteResultSetMetadata(
-    ClientData clientData	/* Instance data for the connection */
+    void *clientData	/* Instance data for the connection */
 ) {
     DecrResultSetRefCount((ResultSetData*)clientData);
 }
@@ -3546,8 +3546,8 @@ DeleteResultSet(
 static int
 CloneResultSet(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    ClientData metadata,	/* Metadata to be cloned */
-    ClientData* newMetaData	/* Where to put the cloned metadata */
+    void *metadata,	/* Metadata to be cloned */
+    void **newMetaData	/* Where to put the cloned metadata */
 ) {
     (void)metadata;
     (void)newMetaData;
@@ -3572,6 +3572,11 @@ CloneResultSet(
  *-----------------------------------------------------------------------------
  */
 
+#ifndef STRINGIFY
+#  define STRINGIFY(x) STRINGIFY1(x)
+#  define STRINGIFY1(x) #x
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
@@ -3584,6 +3589,7 @@ Tdbcmysql_Init(
     Tcl_Object curClassObject;  /* Tcl_Object representing the current class */
     Tcl_Class curClass;		/* Tcl_Class representing the current class */
     int i;
+    Tcl_CmdInfo info;
 
     /* Require all package dependencies */
 
@@ -3595,6 +3601,63 @@ Tdbcmysql_Init(
     }
     if (Tdbc_InitStubs(interp) == NULL) {
 	return TCL_ERROR;
+    }
+
+    if (Tcl_GetCommandInfo(interp, "::tcl::build-info", &info)) {
+	Tcl_CreateObjCommand(interp, "::tdbc::mysql::build-info",
+		info.objProc, (void *)(
+		    PACKAGE_VERSION "+" STRINGIFY(TDBC_MYSQL_VERSION_UUID)
+#if defined(__clang__) && defined(__clang_major__)
+			    ".clang-" STRINGIFY(__clang_major__)
+#if __clang_minor__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__clang_minor__)
+#endif
+#if defined(__cplusplus) && !defined(__OBJC__)
+			    ".cplusplus"
+#endif
+#ifndef NDEBUG
+			    ".debug"
+#endif
+#if !defined(__clang__) && !defined(__INTEL_COMPILER) && defined(__GNUC__)
+			    ".gcc-" STRINGIFY(__GNUC__)
+#if __GNUC_MINOR__ < 10
+			    "0"
+#endif
+			    STRINGIFY(__GNUC_MINOR__)
+#endif
+#ifdef __INTEL_COMPILER
+			    ".icc-" STRINGIFY(__INTEL_COMPILER)
+#endif
+#ifdef TCL_MEM_DEBUG
+			    ".memdebug"
+#endif
+#if defined(_MSC_VER)
+			    ".msvc-" STRINGIFY(_MSC_VER)
+#endif
+#ifdef USE_NMAKE
+			    ".nmake"
+#endif
+#ifndef TCL_CFG_OPTIMIZED
+			    ".no-optimize"
+#endif
+#ifdef __OBJC__
+			    ".objective-c"
+#if defined(__cplusplus)
+			    "plusplus"
+#endif
+#endif
+#ifdef TCL_CFG_PROFILED
+			    ".profile"
+#endif
+#ifdef PURIFY
+			    ".purify"
+#endif
+#ifdef STATIC_BUILD
+			    ".static"
+#endif
+		), NULL);
     }
 
     /* Provide the current package */
@@ -3622,7 +3685,7 @@ Tdbcmysql_Init(
 				&isNew);
 	Tcl_Obj* nameObj = Tcl_NewStringObj(dataTypes[i].name, -1);
 	Tcl_IncrRefCount(nameObj);
-	Tcl_SetHashValue(entry, (ClientData) nameObj);
+	Tcl_SetHashValue(entry, (void *)nameObj);
     }
 
     /*
@@ -3643,7 +3706,7 @@ Tdbcmysql_Init(
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
 					  &ConnectionConstructorType,
-					  (ClientData) pidata));
+					  pidata));
 
     /* Attach the methods to the 'connection' class */
 
@@ -3651,7 +3714,7 @@ Tdbcmysql_Init(
 	nameObj = Tcl_NewStringObj(ConnectionMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
 	Tcl_NewMethod(interp, curClass, nameObj, 1, ConnectionMethods[i],
-			   (ClientData) NULL);
+		NULL);
 	Tcl_DecrRefCount(nameObj);
     }
 
@@ -3670,8 +3733,7 @@ Tdbcmysql_Init(
 
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
-					  &StatementConstructorType,
-					  (ClientData) NULL));
+					  &StatementConstructorType, NULL));
 
     /* Attach the methods to the 'statement' class */
 
@@ -3679,7 +3741,7 @@ Tdbcmysql_Init(
 	nameObj = Tcl_NewStringObj(StatementMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
 	Tcl_NewMethod(interp, curClass, nameObj, 1, StatementMethods[i],
-			   (ClientData) NULL);
+			   NULL);
 	Tcl_DecrRefCount(nameObj);
     }
 
@@ -3698,27 +3760,25 @@ Tdbcmysql_Init(
 
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
-					  &ResultSetConstructorType,
-					  (ClientData) NULL));
+					  &ResultSetConstructorType, NULL));
 
     /* Attach the methods to the 'resultSet' class */
 
     for (i = 0; ResultSetMethods[i] != NULL; ++i) {
 	nameObj = Tcl_NewStringObj(ResultSetMethods[i]->name, -1);
 	Tcl_IncrRefCount(nameObj);
-	Tcl_NewMethod(interp, curClass, nameObj, 1, ResultSetMethods[i],
-			   (ClientData) NULL);
+	Tcl_NewMethod(interp, curClass, nameObj, 1, ResultSetMethods[i], NULL);
 	Tcl_DecrRefCount(nameObj);
     }
     nameObj = Tcl_NewStringObj("nextlist", -1);
     Tcl_IncrRefCount(nameObj);
     Tcl_NewMethod(interp, curClass, nameObj, 1, &ResultSetNextrowMethodType,
-		  (ClientData) 1);
+		  INT2PTR(1));
     Tcl_DecrRefCount(nameObj);
     nameObj = Tcl_NewStringObj("nextdict", -1);
     Tcl_IncrRefCount(nameObj);
     Tcl_NewMethod(interp, curClass, nameObj, 1, &ResultSetNextrowMethodType,
-		  (ClientData) 0);
+		  INT2PTR(0));
     Tcl_DecrRefCount(nameObj);
 
     /*

@@ -3,7 +3,7 @@ if { $argc < 1 } {
     exit 1
 }
 
-set fmt [lindex $argv 0]  
+set fmt [lindex $argv 0]
 set argv [lrange $argv 1 end]
 set testFile "$fmt.test"
 if { ![file exists $testFile] } {

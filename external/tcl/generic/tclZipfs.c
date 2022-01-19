@@ -36,6 +36,39 @@
 #include <dlfcn.h>
 #endif
 
+/*
+ * Macros to report errors only if an interp is present.
+ */
+
+#define ZIPFS_ERROR(interp,errstr) \
+    do {								\
+	if (interp) {							\
+	    Tcl_SetObjResult(interp, Tcl_NewStringObj(errstr, -1));	\
+	}								\
+    } while (0)
+#define ZIPFS_MEM_ERROR(interp) \
+    do {								\
+	if (interp) {							\
+	    Tcl_SetObjResult(interp, Tcl_NewStringObj(			\
+		    "out of memory", -1));				\
+	    Tcl_SetErrorCode(interp, "TCL", "MALLOC", NULL);		\
+	}								\
+    } while (0)
+#define ZIPFS_POSIX_ERROR(interp,errstr) \
+    do {								\
+	if (interp) {							\
+	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(			\
+		    "%s: %s", errstr, Tcl_PosixError(interp)));		\
+	}								\
+    } while (0)
+#define ZIPFS_ERROR_CODE(interp,errcode) \
+    do {								\
+	if (interp) {							\
+	    Tcl_SetErrorCode(interp, "TCL", "ZIPFS", errcode, NULL);	\
+	}								\
+    } while (0)
+
+
 #ifdef HAVE_ZLIB
 #include "zlib.h"
 #include "crypt.h"
@@ -123,38 +156,6 @@
 #define ZIP_PASSWORD_END_SIG		0x5a5a4b50
 
 #define DEFAULT_WRITE_MAX_SIZE		(2 * 1024 * 1024)
-
-/*
- * Macros to report errors only if an interp is present.
- */
-
-#define ZIPFS_ERROR(interp,errstr) \
-    do {								\
-	if (interp) {							\
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(errstr, -1));	\
-	}								\
-    } while (0)
-#define ZIPFS_MEM_ERROR(interp) \
-    do {								\
-	if (interp) {							\
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(			\
-		    "out of memory", -1));				\
-	    Tcl_SetErrorCode(interp, "TCL", "MALLOC", NULL);		\
-	}								\
-    } while (0)
-#define ZIPFS_POSIX_ERROR(interp,errstr) \
-    do {								\
-	if (interp) {							\
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(			\
-		    "%s: %s", errstr, Tcl_PosixError(interp)));		\
-	}								\
-    } while (0)
-#define ZIPFS_ERROR_CODE(interp,errcode) \
-    do {								\
-	if (interp) {							\
-	    Tcl_SetErrorCode(interp, "TCL", "ZIPFS", errcode, NULL);	\
-	}								\
-    } while (0)
 
 /*
  * Windows drive letters.
@@ -5707,6 +5708,8 @@ TclZipfs_Init(
 #endif /* HAVE_ZLIB */
 }
 
+#ifdef HAVE_ZLIB
+
 #if !defined(STATIC_BUILD)
 static int
 ZipfsAppHookFindTclInit(
@@ -5791,7 +5794,7 @@ ZipfsMountExitHandler(
     }
 
 }
-
+
 /*
  *-------------------------------------------------------------------------
  *
@@ -5802,7 +5805,7 @@ ZipfsMountExitHandler(
  *-------------------------------------------------------------------------
  */
 
-int
+const char *
 TclZipfs_AppHook(
 #ifdef SUPPORT_BUILTIN_ZIP_INSTALL
     int *argcPtr,		/* Pointer to argc */
@@ -5816,6 +5819,7 @@ TclZipfs_AppHook(
 #endif /* _WIN32 */
 {
     const char *archive;
+    const char *version = Tcl_InitSubsystems();
 
 #ifdef _WIN32
     Tcl_FindExecutable(NULL);
@@ -5858,7 +5862,7 @@ TclZipfs_AppHook(
 	    Tcl_DecrRefCount(vfsInitScript);
 	    if (found == TCL_OK) {
 		zipfs_literal_tcl_library = ZIPFS_APP_MOUNT "/tcl_library";
-		return TCL_OK;
+		return version;
 	    }
 	}
 #ifdef SUPPORT_BUILTIN_ZIP_INSTALL
@@ -5891,7 +5895,7 @@ TclZipfs_AppHook(
 	    if (Tcl_FSAccess(vfsInitScript, F_OK) == 0) {
 		Tcl_SetStartupScript(vfsInitScript, NULL);
 	    }
-	    return TCL_OK;
+	    return version;
 	} else if (!TclZipfs_Mount(NULL, ZIPFS_APP_MOUNT, archive, NULL)) {
 	    int found;
 	    Tcl_Obj *vfsInitScript;
@@ -5915,7 +5919,7 @@ TclZipfs_AppHook(
 	    Tcl_DecrRefCount(vfsInitScript);
 	    if (found == TCL_OK) {
 		zipfs_literal_tcl_library = ZIPFS_APP_MOUNT "/tcl_library";
-		return TCL_OK;
+		return version;
 	    }
 	}
 #ifdef _WIN32
@@ -5923,10 +5927,10 @@ TclZipfs_AppHook(
 #endif /* _WIN32 */
 #endif /* SUPPORT_BUILTIN_ZIP_INSTALL */
     }
-    return TCL_OK;
+    return version;
 }
 
-#ifndef HAVE_ZLIB
+#else /* !HAVE_ZLIB */
 
 /*
  *-------------------------------------------------------------------------
@@ -5941,9 +5945,9 @@ TclZipfs_AppHook(
 int
 TclZipfs_Mount(
     Tcl_Interp *interp,		/* Current interpreter. */
-    const char *mountPoint,	/* Mount point path. */
-    const char *zipname,	/* Path to ZIP file to mount. */
-    const char *passwd)		/* Password for opening the ZIP, or NULL if
+    TCL_UNUSED(const char *),	/* Mount point path. */
+    TCL_UNUSED(const char *),	/* Path to ZIP file to mount. */
+    TCL_UNUSED(const char *))		/* Password for opening the ZIP, or NULL if
 				 * the ZIP is unprotected. */
 {
     ZIPFS_ERROR(interp, "no zlib available");
@@ -5954,10 +5958,10 @@ TclZipfs_Mount(
 int
 TclZipfs_MountBuffer(
     Tcl_Interp *interp,		/* Current interpreter. NULLable. */
-    const char *mountPoint,	/* Mount point path. */
-    unsigned char *data,
-    size_t datalen,
-    int copy)
+    TCL_UNUSED(const char *),	/* Mount point path. */
+    TCL_UNUSED(unsigned char *),
+    TCL_UNUSED(size_t),
+    TCL_UNUSED(int))
 {
     ZIPFS_ERROR(interp, "no zlib available");
     ZIPFS_ERROR_CODE(interp, "NO_ZLIB");
@@ -5967,12 +5971,31 @@ TclZipfs_MountBuffer(
 int
 TclZipfs_Unmount(
     Tcl_Interp *interp,		/* Current interpreter. */
-    const char *mountPoint)	/* Mount point path. */
+    TCL_UNUSED(const char *))	/* Mount point path. */
 {
     ZIPFS_ERROR(interp, "no zlib available");
     ZIPFS_ERROR_CODE(interp, "NO_ZLIB");
     return TCL_ERROR;
 }
+
+const char *
+TclZipfs_AppHook(
+    TCL_UNUSED(int *), /*argcPtr*/
+#ifdef _WIN32
+    TCL_UNUSED(WCHAR ***)) /* argvPtr */
+#else /* !_WIN32 */
+    TCL_UNUSED(char ***))		/* Pointer to argv */
+#endif /* _WIN32 */
+{
+    return NULL;
+}
+
+Tcl_Obj *
+TclZipfs_TclLibrary(void)
+{
+    return NULL;
+}
+
 #endif /* !HAVE_ZLIB */
 
 /*

@@ -7,7 +7,7 @@
 #
 
 # Declare each of the functions in the public tkimg interface.
-# Note that an index should never be reused for a different 
+# Note that an index should never be reused for a different
 # function in order to preserve backwards compatibility.
 
 library tkimg
@@ -128,7 +128,7 @@ declare 59 {
         int nFloats, char *buf, int swapBytes)
 }
 declare 60 {
-    int tkimg_ReadUByteFile (tkimg_MFile *handle, unsigned char *buf, 
+    int tkimg_ReadUByteFile (tkimg_MFile *handle, unsigned char *buf,
         int width, int height,
         int nchan, int verbose, int findMinMax,
         float *minVals, float *maxVals)

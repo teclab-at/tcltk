@@ -1,8 +1,11 @@
 # -*- tcl -*- Tcl package index file
 # --- --- --- Handcrafted, final generation by configure.
 
-package ifneeded @PACKAGE_TCLNAME@ @PACKAGE_VERSION@ [list load [file join $dir @PKG_LIB_FILE@]]
-
+if {[package vsatisfies [package provide Tcl] 9.0-]} {
+    package ifneeded @PACKAGE_TCLNAME@ @PACKAGE_VERSION@ [list load [file join $dir @PKG_LIB_FILE9@]]
+} else {
+    package ifneeded @PACKAGE_TCLNAME@ @PACKAGE_VERSION@ [list load [file join $dir @PKG_LIB_FILE8@]]
+}
 # Compatibility hack. When asking for the old name of the package
 # then load all format handlers and base libraries provided by tkImg.
 # Actually we ask only for the format handlers, the required base

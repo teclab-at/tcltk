@@ -71,8 +71,8 @@
 TDBCAPI Tcl_Obj*
 Tdbc_TokenizeSql(
     Tcl_Interp *interp,
-    const char* zSql
-){
+    const char* zSql)
+{
     Tcl_Obj *resultPtr;
     int i;
 
@@ -163,8 +163,8 @@ Tdbc_TokenizeSql(
             }
         }
     }
-    if (i>0) {
-        Tcl_ListObjAppendElement(interp, resultPtr, Tcl_NewStringObj(zSql, i));
+    if (i > 0) {
+	Tcl_ListObjAppendElement(interp, resultPtr, Tcl_NewStringObj(zSql, i));
     }
     return resultPtr;
 }
@@ -188,11 +188,11 @@ Tdbc_TokenizeSql(
 
 MODULE_SCOPE int
 TdbcTokenizeObjCmd(
-    ClientData dummy,	/* Unused */
+    void *dummy,	/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
-    Tcl_Obj *const objv[]	/* Parameter vector */
-) {
+    Tcl_Obj *const objv[])	/* Parameter vector */
+{
     Tcl_Obj* retval;
     (void)dummy;
 

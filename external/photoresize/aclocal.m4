@@ -7,5 +7,3 @@ builtin(include,tclconfig/tcl.m4)
 #
 # Add here whatever m4 macros you want to define for your package
 #
-builtin(include,tclconfig/ac_pkg_swig.m4)
-builtin(include,tclconfig/swiginterface.m4)

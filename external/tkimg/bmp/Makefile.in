@@ -62,6 +62,8 @@ PKG_HEADERS	= @PKG_HEADERS@
 #========================================================================
 
 PKG_LIB_FILE	= @PKG_LIB_FILE@
+PKG_LIB_FILE8	= @PKG_LIB_FILE8@
+PKG_LIB_FILE9	= @PKG_LIB_FILE9@
 PKG_STUB_LIB_FILE = @PKG_STUB_LIB_FILE@
 
 lib_BINARIES	= $(PKG_LIB_FILE)
@@ -76,7 +78,8 @@ exec_prefix	= @exec_prefix@
 bindir		= @bindir@
 libdir		= @libdir@
 includedir	= @includedir@
-datarootdir     = @datarootdir@
+datarootdir	= @datarootdir@
+runstatedir	= @runstatedir@
 datadir		= @datadir@
 mandir		= @mandir@
 
@@ -307,9 +310,13 @@ VPATH = $(srcdir):$(srcdir)/generic:$(srcdir)/unix:$(srcdir)/win
 #========================================================================
 
 pkgIndex.tcl:	$(PKG_LIB_FILE)
-	(echo 'package ifneeded $(PACKAGE_TCLNAME) $(PACKAGE_VERSION) \
-	    [list load [file join $$dir $(PKG_LIB_FILE)]]'\
-	) > pkgIndex.tcl
+	(\
+	    echo "if {[package vsatisfies [package provide Tcl] 9.0-]} {";\
+	    echo "    package ifneeded $(PACKAGE_TCLNAME) $(PACKAGE_VERSION) [list load [file join \$$dir $(PKG_LIB_FILE9)]]";\
+	    echo "} else {";\
+	    echo "    package ifneeded $(PACKAGE_TCLNAME) $(PACKAGE_VERSION) [list load [file join \$$dir $(PKG_LIB_FILE8)]]";\
+	    echo "}";\
+	) > "pkgIndex.tcl"; \
 
 #========================================================================
 # Distribution creation
@@ -326,14 +333,14 @@ dist-clean:
 
 dist: dist-clean doc
 	mkdir -p $(DIST_DIR)
-	cp -p $(srcdir)/ChangeLog $(srcdir)/README* $(srcdir)/doc/license* \
+	cp -p $(srcdir)/ChangeLog $(srcdir)/configure.ac \
 		$(srcdir)/aclocal.m4 $(srcdir)/configure $(srcdir)/*.in \
 		$(DIST_DIR)/
 	chmod 664 $(DIST_DIR)/Makefile.in $(DIST_DIR)/aclocal.m4
 	chmod 775 $(DIST_DIR)/configure $(DIST_DIR)/configure.ac
 
 	mkdir $(DIST_DIR)/tclconfig
-	cp $(srcdir)/tclconfig/install-sh $(srcdir)/tclconfig/tcl.m4 \
+	cp $(srcdir)/../tclconfig/install-sh $(srcdir)/../tclconfig/tcl.m4 \
 		$(DIST_DIR)/tclconfig/
 	chmod 664 $(DIST_DIR)/tclconfig/tcl.m4
 	chmod +x $(DIST_DIR)/tclconfig/install-sh

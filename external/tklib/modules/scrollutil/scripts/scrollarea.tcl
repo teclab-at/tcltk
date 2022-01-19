@@ -11,7 +11,7 @@
 #   - Private procedures used in bindings
 #   - Private utility procedures
 #
-# Copyright (c) 2019-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2019-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 #
@@ -171,6 +171,7 @@ proc scrollutil::sa::createBindings {} {
         }
     }
     bind Scrollarea <Configure> {
+	after   1 [list scrollutil::sa::updateScrollbars %W]
 	after 300 [list scrollutil::sa::updateScrollbars %W]
     }
     bind Scrollarea <Enter>	 { scrollutil::sa::onScrollareaEnter %W }

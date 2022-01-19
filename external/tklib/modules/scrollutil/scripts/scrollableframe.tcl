@@ -9,7 +9,7 @@
 #   - Private procedures implementing the scrollableframe widget command
 #   - Private procedures used in bindings
 #
-# Copyright (c) 2019-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2019-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 #
@@ -155,6 +155,10 @@ proc scrollutil::sf::createBindings {} {
 	    [list scrollutil::sf::onB1Motion %W %x %y $isCf]
 	bind $class <ButtonRelease-1> \
 	    [list scrollutil::sf::onButtonRelease1 %W $isCf]
+    }
+
+    bind ScrollableframeCf <<NoManagedChild>> {
+	scrollutil::sf::onNoManagedChild %W
     }
 }
 
@@ -1080,4 +1084,22 @@ proc scrollutil::sf::onButtonRelease1 {w isCf} {
     }
     variable origCursor
     ::$win configure -cursor $origCursor
+}
+
+#------------------------------------------------------------------------------
+# scrollutil::sf::onNoManagedChild
+#------------------------------------------------------------------------------
+proc scrollutil::sf::onNoManagedChild cf {
+    set win [winfo parent [winfo parent $cf]]
+    upvar ::scrollutil::ns${win}::data data
+
+    if {!$data(-fitcontentwidth) && $data(-contentwidth) <= 0} {
+	$cf configure -width 1
+	$cf configure -width $data(-contentwidth)
+    }
+
+    if {!$data(-fitcontentheight) && $data(-contentheight) <= 0} {
+	$cf configure -height 1
+	$cf configure -height $data(-contentheight)
+    }
 }

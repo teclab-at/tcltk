@@ -144,16 +144,16 @@
 	* Sync genStubs.tcl with latest one from Tcl 8.6,
 	  regenerated all *Decls.h files. All stubs
 	  pointers are const now.
-    
+
 2009-07-26  Jan Nijtmans <nijtmans@users.sourceforge.net>
 
 	* Sync with latest TEA (tcl.m4), regenerated all
 	  configure scripts.
-    
+
 2009-04-28  Jan Nijtmans <nijtmans@users.sourceforge.net>
 
 	* Fix [Bug #82910] teacup requires libX11 to run
-    
+
 2009-03-12  Stuart Cassoff <stwo@users.sourceforge.net>
 
 	* various fixes to tcl.m4 [Bug #2669308] (Stuart Cassoff)
@@ -225,7 +225,7 @@
 2008-11-13  Andreas Kupries <andreask@activestate.com>
 
 	* Fix win32 compile issue with zlib, mask gzprintf
-    
+
 2008-11-04	Paul Obermeier <obermeier@users.sourceforge.net>
 
 	* Added new (visual) test suite for checking the different

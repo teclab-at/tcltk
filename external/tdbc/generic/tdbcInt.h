@@ -34,7 +34,7 @@
  * Linkage to procedures not exported from this module
  */
 
-MODULE_SCOPE int TdbcTokenizeObjCmd(ClientData clientData, Tcl_Interp* interp,
+MODULE_SCOPE int TdbcTokenizeObjCmd(void *clientData, Tcl_Interp* interp,
 				    int objc, Tcl_Obj *const objv[]);
 
 #endif
