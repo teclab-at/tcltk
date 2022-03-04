@@ -49,4 +49,4 @@ if [[ $UID -ne 0 ]]; then
 fi
 
 ## install development tools
-apt-get install autoconf libfftw3-dev gcc make libxt-dev libxft-dev libxcursor-dev chrpath libpq5 libfftw3-3 postgresql-server-dev-all texlive-latex-base texlive-latex-recommended texlive-latex-extra dpkg-dev libssl-dev
+apt install autoconf libfftw3-dev gcc make libxt-dev libxft-dev libxcursor-dev chrpath libpq5 libfftw3-3 postgresql-server-dev-all texlive-latex-base texlive-latex-recommended texlive-latex-extra dpkg-dev libssl-dev
