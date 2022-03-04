@@ -49,4 +49,4 @@ if [[ $UID -ne 0 ]]; then
 fi
 
 ## install development tools
-apt-get install libxt-dev libx11-dev libxft-dev gcc postgresql-server-dev-all libcairo2-dev libxcursor-dev libfftw3-dev
+apt install libxt-dev libx11-dev libxft-dev gcc postgresql-server-dev-all libcairo2-dev libxcursor-dev libfftw3-dev
