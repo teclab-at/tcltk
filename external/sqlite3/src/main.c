@@ -4029,12 +4029,16 @@ int sqlite3_test_control(int op, ...){
     ** sqlite3_test_control().
     */
     case SQLITE_TESTCTRL_FAULT_INSTALL: {
-      /* MSVC is picky about pulling func ptrs from va lists.
-      ** http://support.microsoft.com/kb/47961
+      /* A bug in MSVC prevents it from understanding pointers to functions
+      ** types in the second argument to va_arg().  Work around the problem
+      ** using a typedef.
+      ** http://support.microsoft.com/kb/47961  <-- dead hyperlink
+      ** Search at http://web.archive.org/ to find the 2015-03-16 archive
+      ** of the link above to see the original text.
       ** sqlite3GlobalConfig.xTestCallback = va_arg(ap, int(*)(int));
       */
-      typedef int(*TESTCALLBACKFUNC_t)(int);
-      sqlite3GlobalConfig.xTestCallback = va_arg(ap, TESTCALLBACKFUNC_t);
+      typedef int(*sqlite3FaultFuncType)(int);
+      sqlite3GlobalConfig.xTestCallback = va_arg(ap, sqlite3FaultFuncType);
       rc = sqlite3FaultSim(0);
       break;
     }
@@ -4093,6 +4097,25 @@ int sqlite3_test_control(int op, ...){
       volatile int x = 0;
       assert( /*side-effects-ok*/ (x = va_arg(ap,int))!=0 );
       rc = x;
+#if defined(SQLITE_DEBUG)
+      /* Invoke these debugging routines so that the compiler does not
+      ** issue "defined but not used" warnings. */
+      if( x==9999 ){
+        sqlite3ShowExpr(0);
+        sqlite3ShowExpr(0);
+        sqlite3ShowExprList(0);
+        sqlite3ShowIdList(0);
+        sqlite3ShowSrcList(0);
+        sqlite3ShowWith(0);
+        sqlite3ShowUpsert(0);
+        sqlite3ShowTriggerStep(0);
+        sqlite3ShowTriggerStepList(0);
+        sqlite3ShowTrigger(0);
+        sqlite3ShowTriggerList(0);
+        sqlite3ShowWindow(0);
+        sqlite3ShowWinFunc(0);
+      }
+#endif
       break;
     }
 
@@ -4161,13 +4184,27 @@ int sqlite3_test_control(int op, ...){
       break;
     }
 
-    /*   sqlite3_test_control(SQLITE_TESTCTRL_LOCALTIME_FAULT, int onoff);
+    /*   sqlite3_test_control(SQLITE_TESTCTRL_LOCALTIME_FAULT, onoff, xAlt);
     **
-    ** If parameter onoff is non-zero, subsequent calls to localtime()
-    ** and its variants fail. If onoff is zero, undo this setting.
+    ** If parameter onoff is 1, subsequent calls to localtime() fail.
+    ** If 2, then invoke xAlt() instead of localtime().  If 0, normal
+    ** processing.
+    **
+    ** xAlt arguments are void pointers, but they really want to be:
+    **
+    **    int xAlt(const time_t*, struct tm*);
+    **
+    ** xAlt should write results in to struct tm object of its 2nd argument
+    ** and return zero on success, or return non-zero on failure.
     */
     case SQLITE_TESTCTRL_LOCALTIME_FAULT: {
       sqlite3GlobalConfig.bLocaltimeFault = va_arg(ap, int);
+      if( sqlite3GlobalConfig.bLocaltimeFault==2 ){
+        typedef int(*sqlite3LocaltimeType)(const void*,void*);
+        sqlite3GlobalConfig.xAltLocaltime = va_arg(ap, sqlite3LocaltimeType);
+      }else{
+        sqlite3GlobalConfig.xAltLocaltime = 0;
+      }
       break;
     }
 
@@ -4340,8 +4377,8 @@ int sqlite3_test_control(int op, ...){
     **
     **  "ptr" is a pointer to a u32.  
     **
-    **   op==0       Store the current sqlite3SelectTrace in *ptr
-    **   op==1       Set sqlite3SelectTrace to the value *ptr
+    **   op==0       Store the current sqlite3TreeTrace in *ptr
+    **   op==1       Set sqlite3TreeTrace to the value *ptr
     **   op==3       Store the current sqlite3WhereTrace in *ptr
     **   op==3       Set sqlite3WhereTrace to the value *ptr
     */
@@ -4349,10 +4386,10 @@ int sqlite3_test_control(int op, ...){
        int opTrace = va_arg(ap, int);
        u32 *ptr = va_arg(ap, u32*);
        switch( opTrace ){
-         case 0:   *ptr = sqlite3SelectTrace;      break;
-         case 1:   sqlite3SelectTrace = *ptr;      break;
-         case 2:   *ptr = sqlite3WhereTrace;       break;
-         case 3:   sqlite3WhereTrace = *ptr;       break;
+         case 0:   *ptr = sqlite3TreeTrace;      break;
+         case 1:   sqlite3TreeTrace = *ptr;      break;
+         case 2:   *ptr = sqlite3WhereTrace;     break;
+         case 3:   sqlite3WhereTrace = *ptr;     break;
        }
        break;
     }
@@ -4369,10 +4406,12 @@ int sqlite3_test_control(int op, ...){
     case SQLITE_TESTCTRL_LOGEST: {
       double rIn = va_arg(ap, double);
       LogEst rLogEst = sqlite3LogEstFromDouble(rIn);
-      u64 iInt = sqlite3LogEstToInt(rLogEst);
-      va_arg(ap, int*)[0] = rLogEst;
-      va_arg(ap, u64*)[0] = iInt;
-      va_arg(ap, int*)[0] = sqlite3LogEst(iInt);
+      int *pI1 = va_arg(ap,int*);
+      u64 *pU64 = va_arg(ap,u64*);
+      int *pI2 = va_arg(ap,int*);
+      *pI1 = rLogEst;
+      *pU64 = sqlite3LogEstToInt(rLogEst);
+      *pI2 = sqlite3LogEst(*pU64);
       break;
     }
  
@@ -4585,6 +4624,24 @@ const char *sqlite3_filename_wal(const char *zFilename){
 Btree *sqlite3DbNameToBtree(sqlite3 *db, const char *zDbName){
   int iDb = zDbName ? sqlite3FindDbName(db, zDbName) : 0;
   return iDb<0 ? 0 : db->aDb[iDb].pBt;
+}
+
+/*
+** Return the name of the N-th database schema.  Return NULL if N is out
+** of range.
+*/
+const char *sqlite3_db_name(sqlite3 *db, int N){
+#ifdef SQLITE_ENABLE_API_ARMOR
+  if( !sqlite3SafetyCheckOk(db) ){
+    (void)SQLITE_MISUSE_BKPT;
+    return 0;
+  }
+#endif
+  if( N<0 || N>=db->nDb ){
+    return 0;
+  }else{
+    return db->aDb[N].zDbSName;
+  }
 }
 
 /*

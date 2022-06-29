@@ -128,7 +128,7 @@ static const struct SqlStateLookup {
 TDBCAPI const char*
 Tdbc_MapSqlState(const char* sqlstate)
 {
-    int i;
+    size_t i;
     for (i = 0; StateLookup[i].stateclass != NULL; ++i) {
 	if (!strncmp(sqlstate, StateLookup[i].stateclass, 2)) {
 	    return StateLookup[i].message;
@@ -160,13 +160,11 @@ Tdbc_MapSqlState(const char* sqlstate)
 
 static int
 TdbcMapSqlStateObjCmd(
-    void *dummy,		/* No client data */
+    TCL_UNUSED(void *),		/* No client data */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
     Tcl_Obj *const objv[]	/* Parameter vector */
 ) {
-    (void)dummy;
-
     if (objc != 2) {
 	Tcl_WrongNumArgs(interp, 1, objv, "sqlstate");
 	return TCL_ERROR;
@@ -207,7 +205,7 @@ Tdbc_Init(
     Tcl_Interp* interp		/* Tcl interpreter */
 ) {
 
-    int i;
+    size_t i;
     Tcl_CmdInfo info;
 
     /* Require Tcl */

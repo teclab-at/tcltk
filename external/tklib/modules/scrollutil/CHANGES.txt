@@ -1,5 +1,79 @@
-What is new in Scrollutil 1.13?
+What is new in Scrollutil 1.15?
 -------------------------------
+
+1. The plainnotebook widget now supports the navigation between the
+   selectable tabs via the mouse wheel (thanks to Harald Oehlmann for
+   his TIP 591 and proposal), as well as with the keys "Down", "Up",
+   "Control-Tab", and "Control-Shift-Tab".
+
+2. The scrollednotebook widget now provides two arrow buttons placed on
+   demand in the top-left and top-right or bottom-left and bottom-right
+   corners (depending on the notebook's style), used for scrolling the
+   tab row (thanks to Harald Oehlmann for his proposal).
+
+3. The scrollednotebook widget now correctly interprets the x coordinate
+   within an index of the form "@x,y" or passed to the "identify" 
+   subcommand as being relative to the scrollednotebook widget (rather
+   than the ttk::notebook contained in the latter).
+
+4. Corrected a typo in the implementation of the
+   scrollutil::addMouseWheelSupport command.
+
+5. Made the detection of the desktop environment when calculating the
+   scaling percentage corresponding to the display's DPI scaling level
+   on X11 more reliable (thanks to Florian Pigorsch for his bug report).
+
+6. Numerous further improvements in the code, the demo script
+   "PagesManDemo.tcl", and the helper script "styleUtil.tcl", which is
+   source'd in all demo scripts.
+
+What was new in Scrollutil 1.14?
+--------------------------------
+
+1. Improvements in the scaleutil package, related to setting the default
+   height of the ttk::treeview rows to a value based on the font's
+   metrics (see the section "More on scrollutil::scalingpct" in
+   Scrollutil Programmer's Guide for details); several extensions.
+
+2. Pressing and later releasing the left mouse button over the
+   "closetab" element of a ttk:notebook tab now generates a
+   <<CloseTabRequested>> virtual event, whose handling by closing the
+   tab via the notebook's "forget" subcommand if appropriate lies in
+   the responsibility of the application (thanks to Alexandru Dadalau
+   for his proposal) (POTENTIAL INCOMPATIBILITY!).
+
+3. The title label as well as the tabs created with the "addlabel" and
+   "insertlabel" plainnotebook subcommands now have their own styles
+   "PnbTitle.TLabel" and "PnbLabel.TLabel" (thanks to Harald Oehlmann
+   for his proposal).
+
+4. Added the plainnotebook "titlepath" subcommand, which returns the
+   path name of the widget's title label.
+
+5. The Scrollutil distribution now includes the new clampatch package,
+   whose "clampatch::patchClamTheme" command makes the ttk::button
+   widgets as well as the ttk::treeview and tablelist headers of the
+   "clam" theme smaller and significantly improves the look and behavior
+   of its ttk::checkbutton and ttk::radiobutton widgets.  The script
+   "styleUtil.tcl", which is source'd in all demo scripts, now invokes
+   this procedure.
+
+6. Fixed a bug related to changing the value of the "-xscrollbarmode" or
+   "-yscrollbarmode" scrollarea option from "none" to "static" or
+   "dynamic" (thanks to Bo Berggren for his bug report and valuable
+   contribution).
+
+7. Several improvements in the demo scripts.  For example, they now
+   retrieve the current theme via "[ttk::style theme use]" when possible
+   rather than relying on the value of the variable "ttk::currentTheme"
+   (which is set by the procedure "ttk::setTheme" only).
+
+8. Improvements in the code and documentation, especially in Scrollutil
+   Programmer's Guide and the description of the plainnotebook widget
+   (thanks to Harald Oehlmann for his feedback).
+
+What was new in Scrollutil 1.13?
+--------------------------------
 
 1. Added code that handles the virtual event <<NoManagedChild>>, sent by
    Tk 8.7a3 and later to the content frame of a scrollableframe when its

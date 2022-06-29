@@ -1,3 +1,79 @@
+2022-05-30 Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* Released Tablelist 6.19.
+
+2022-05-30 Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:                          Bumped the version number to 6.19.
+	* COPYRIGHT.txt:
+	* README.txt:
+	* ../../examples/tablelist/*.tcl:
+
+	* CHANGES.txt: Updated to reflect the changes.
+	* doc/*.html:
+
+	* scripts/tablelistBind.tcl: Made sure that the workaround for the 
+	  problem that in Tk 8.6.11 and later on Mac OS X/11+ the idle
+	  callbacks are often fired at unexpected times won't lead to
+	  invocations of callbacks for already destroyed tablelist widgets.
+
+	* scripts/tablelistEdit.tcl: Moved part of the body of the doEditCell
+	  proc into the new proc configAutoFinishEditing.
+
+	* scripts/tablelistUtil.tcl: Fixed a bug related to making a hidden
+	  column visible again.
+
+	* scripts/tablelistWidget.tcl: The "get", "getcells", "getformatted",
+	  "getformattedcells", "getfullkeys", and "getkeys" subcommands now
+	  accept an optional argument with the possible values "-all",
+	  "-nonhidden", and "-viewable"; if the tablelist widget has no columns
+	  then the "deletecolumns" subcommand now returns immediately without
+	  any further action, like checking the validity of the column indices.
+
+	* scripts/tclIndex: Newly generated.
+
+	* scripts/utils/pkgIndex.tcl:  Made the detection of the desktop
+	* scripts/utils/scaleutil.tcl: environment when calculating the scaling
+	  percentage corresponding to the display's DPI scaling level on X11
+	  more reliable; removed the TEntry scaling for "vista" and "xpnative".
+
+2022-03-22 Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* Released Tablelist 6.18.
+
+2022-03-13 Csaba Nemethi <csaba.nemethi@t-online.de>
+
+	* *.tcl:                          Bumped the version number to 6.18.
+	* COPYRIGHT.txt:
+	* README.txt:
+	* ../../examples/tablelist/*.tcl:
+
+	* CHANGES.txt: Updated to reflect the changes.
+	* doc/*.html:
+
+	* scripts/*.tcl: Added support for the case that the "clam" theme was
+	  modified by invoking the "clampatch::patchClamTheme" command of the
+	  clampatch package (bundled with Scrollutil); when starting the
+	  editing session, the "-exportselection" option of the tablelist
+	  widget is now set to 0, and when the editing is finished or canceled,
+	  the option's original value is restored; made sure that the
+	  "-showeditcursor" configuration option will work as expected also in
+	  the special case that the application was cross-wrapped on Linux for
+	  Windows using freewrap; overhauled the workaround for the problem
+	  that in Tk 8.6.11 and later on Mac OS X/11+ the idle callbacks are
+	  often fired at unexpected times; fixed a bug related to the handling
+	  of the <<ThemeChanged>> event when the package Tablelist rather than
+	  Tablelist_tile was loaded into the interpreter; fixed a bug related
+	  to the mouse event handling for the header labels in the special case
+	  that there is another tablelist closely to the left of the widget in
+	  question.
+
+	* scripts/tclIndex: Newly generated.
+
+	* scripts/utils/*.tcl:  Setting the default height of the ttk::treeview
+	  rows to a value based on the font's metrics; extensions related to
+	  the TSpinbox style; several further extensions and improvements.
+
 2022-01-10 Csaba Nemethi <csaba.nemethi@t-online.de>
 
 	* Released Tablelist 6.17.

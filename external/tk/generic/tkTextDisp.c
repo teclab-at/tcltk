@@ -777,7 +777,8 @@ GetStyle(
     StyleValues styleValues;
     TextStyle *stylePtr;
     Tcl_HashEntry *hPtr;
-    int numTags, isNew, i;
+    TkSizeT numTags, i;
+    int isNew;
     int isSelected;
     XGCValues gcValues;
     unsigned long mask;
@@ -925,9 +926,9 @@ GetStyle(
 	    styleValues.offset = tagPtr->offset;
 	    offsetPrio = tagPtr->priority;
 	}
-	if ((tagPtr->overstrikeString != NULL)
+	if ((tagPtr->overstrike >= 0)
 		&& (tagPtr->priority > overstrikePrio)) {
-	    styleValues.overstrike = tagPtr->overstrike;
+	    styleValues.overstrike = tagPtr->overstrike > 0;
 	    overstrikePrio = tagPtr->priority;
             if (tagPtr->overstrikeColor != NULL) {
                  styleValues.overstrikeColor = tagPtr->overstrikeColor;
@@ -971,9 +972,9 @@ GetStyle(
 	    styleValues.tabStyle = tagPtr->tabStyle;
 	    tabStylePrio = tagPtr->priority;
 	}
-	if ((tagPtr->underlineString != NULL)
+	if ((tagPtr->underline >= 0)
 		&& (tagPtr->priority > underlinePrio)) {
-	    styleValues.underline = tagPtr->underline;
+	    styleValues.underline = tagPtr->underline > 0;
 	    underlinePrio = tagPtr->priority;
             if (tagPtr->underlineColor != NULL) {
                  styleValues.underlineColor = tagPtr->underlineColor;
@@ -981,9 +982,9 @@ GetStyle(
                  styleValues.underlineColor = fgColor;
             }
 	}
-	if ((tagPtr->elideString != NULL)
+	if ((tagPtr->elide >= 0)
 		&& (tagPtr->priority > elidePrio)) {
-	    styleValues.elide = tagPtr->elide;
+	    styleValues.elide = tagPtr->elide > 0;
 	    elidePrio = tagPtr->priority;
 	}
 	if (((tagPtr->wrapMode == TEXT_WRAPMODE_CHAR)
@@ -1247,7 +1248,7 @@ LayoutDLine(
 		 * toggled off), or it's a new tag with higher priority.
 		 */
 
-		if (tagPtr->elideString != NULL) {
+		if (tagPtr->elide >= 0) {
 		    info.tagCnts[tagPtr->priority]++;
 		    if (info.tagCnts[tagPtr->priority] & 1) {
 			info.tagPtrs[tagPtr->priority] = tagPtr;
@@ -1273,12 +1274,12 @@ LayoutDLine(
 			    while (--info.elidePriority > 0) {
 				if (info.tagCnts[info.elidePriority] & 1) {
 				    elide = info.tagPtrs[info.elidePriority]
-					    ->elide;
+					    ->elide > 0;
 				    break;
 				}
 			    }
 			} else {
-			    elide = tagPtr->elide;
+			    elide = tagPtr->elide > 0;
 			    info.elidePriority = tagPtr->priority;
 			}
 		    }
@@ -1394,9 +1395,9 @@ LayoutDLine(
 		 */
 	    } else if ((segPtr->typePtr == &tkTextToggleOffType)
 		    || (segPtr->typePtr == &tkTextToggleOnType)) {
-		if (segPtr->body.toggle.tagPtr->elideString != NULL) {
+		if (segPtr->body.toggle.tagPtr->elide >= 0) {
 		    elide = (segPtr->typePtr == &tkTextToggleOffType)
-			    ^ segPtr->body.toggle.tagPtr->elide;
+			    ^ (segPtr->body.toggle.tagPtr->elide > 0);
 		}
 	    }
 
@@ -2468,7 +2469,7 @@ DisplayDLine(
     }
 
 #ifdef TK_NO_DOUBLE_BUFFERING
-    TkpClipDrawableToRect(display, pixmap, dInfoPtr->x, y + y_off,
+    Tk_ClipDrawableToRect(display, pixmap, dInfoPtr->x, y + y_off,
 	    dInfoPtr->maxX - dInfoPtr->x, height);
 #endif /* TK_NO_DOUBLE_BUFFERING */
 
@@ -2567,6 +2568,13 @@ DisplayDLine(
 		    display, pixmap, dlPtr->y + dlPtr->spaceAbove);
 	}
 
+	if ((textPtr->tkwin == NULL) || (textPtr->flags & DESTROYED)) {
+	    /*
+	     * A displayProc called in the loop above invoked a binding
+	     * that caused the widget to be deleted. Don't do anything.
+	     */
+	    return;
+	}
 	if (dInfoPtr->dLinesInvalidated) {
 	    return;
 	}
@@ -2586,7 +2594,7 @@ DisplayDLine(
 	    dInfoPtr->x, y + y_off, (unsigned) (dInfoPtr->maxX - dInfoPtr->x),
 	    (unsigned) height, dInfoPtr->x, dlPtr->y + y_off);
 #else
-    TkpClipDrawableToRect(display, pixmap, 0, 0, -1, -1);
+    Tk_ClipDrawableToRect(display, pixmap, 0, 0, -1, -1);
 #endif /* TK_NO_DOUBLE_BUFFERING */
     linesRedrawn++;
 }
@@ -3080,14 +3088,14 @@ AsyncUpdateLineMetrics(
         if (textPtr->afterSyncCmd) {
             int code;
 	    Tcl_CancelIdleCall(TkTextRunAfterSyncCmd, textPtr);
-            Tcl_Preserve((ClientData) textPtr->interp);
+            Tcl_Preserve(textPtr->interp);
             code = Tcl_EvalObjEx(textPtr->interp, textPtr->afterSyncCmd,
                     TCL_EVAL_GLOBAL);
 	    if (code == TCL_ERROR) {
                 Tcl_AddErrorInfo(textPtr->interp, "\n    (text sync)");
                 Tcl_BackgroundException(textPtr->interp, TCL_ERROR);
 	    }
-            Tcl_Release((ClientData) textPtr->interp);
+            Tcl_Release(textPtr->interp);
             Tcl_DecrRefCount(textPtr->afterSyncCmd);
             textPtr->afterSyncCmd = NULL;
 	}
@@ -4223,7 +4231,7 @@ DisplayText(
 
     /*
      * Choose a new current item if that is needed (this could cause event
-     * handlers to be invoked, hence the preserve/release calls and the loop,
+     * handlers to be invoked, hence the refcount management and the loop,
      * since the handlers could conceivably necessitate yet another current
      * item calculation). The tkwin check is because the whole window could go
      * away in the Tcl_Release call.
@@ -4417,10 +4425,10 @@ DisplayText(
 	    if (textPtr->flags & GOT_FOCUS) {
 		fgGC = Tk_GCForColor(textPtr->highlightColorPtr,
 			Tk_WindowId(textPtr->tkwin));
-		TkpDrawHighlightBorder(textPtr->tkwin, fgGC, bgGC,
+		Tk_DrawHighlightBorder(textPtr->tkwin, fgGC, bgGC,
 			textPtr->highlightWidth, Tk_WindowId(textPtr->tkwin));
 	    } else {
-		TkpDrawHighlightBorder(textPtr->tkwin, bgGC, bgGC,
+		Tk_DrawHighlightBorder(textPtr->tkwin, bgGC, bgGC,
 			textPtr->highlightWidth, Tk_WindowId(textPtr->tkwin));
 	    }
 	}
@@ -4502,11 +4510,18 @@ DisplayText(
 		    LOG("tk_textRedraw", string);
 		}
 		DisplayDLine(textPtr, dlPtr, prevPtr, pixmap);
+		if ((textPtr->tkwin == NULL) || (textPtr->flags & DESTROYED)) {
+		    /*
+		     * DisplayDLine called a displayProc which invoked a binding
+		     * that caused the widget to be deleted. Don't do anything.
+		     */
+		    goto end;
+		}
 		if (dInfoPtr->dLinesInvalidated) {
 #ifndef TK_NO_DOUBLE_BUFFERING
 		    Tk_FreePixmap(Tk_Display(textPtr->tkwin), pixmap);
 #endif /* TK_NO_DOUBLE_BUFFERING */
-		    return;
+		    goto end;
 		}
 		dlPtr->oldY = dlPtr->y;
 		dlPtr->flags &= ~(NEW_LAYOUT | OLD_Y_INVALID);
@@ -4730,11 +4745,16 @@ TkTextRedrawRegion(
 
     TextInvalidateRegion(textPtr, damageRgn);
 
+    TkDestroyRegion(damageRgn);
+
+    /*
+     * Schedule the redisplay operation if there isn't one already scheduled.
+     */
+
     if (!(dInfoPtr->flags & REDRAW_PENDING)) {
 	dInfoPtr->flags |= REDRAW_PENDING;
 	Tcl_DoWhenIdle(DisplayText, textPtr);
     }
-    TkDestroyRegion(damageRgn);
 }
 
 /*
@@ -4781,10 +4801,6 @@ TextInvalidateRegion(
     if (dInfoPtr->topOfEof < maxY) {
 	dInfoPtr->topOfEof = maxY;
     }
-
-    /*
-     * Schedule the redisplay operation if there isn't one already scheduled.
-     */
 
     inset = textPtr->borderWidth + textPtr->highlightWidth;
     if ((rect.x < (inset + textPtr->padX))
@@ -6445,7 +6461,7 @@ TkTextScanCmd(
 	dInfoPtr->scanMarkY = y;
     } else {
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bad scan option \"%s\": must be mark or dragto",
+		"bad scan option \"%s\": must be dragto or mark",
 		Tcl_GetString(objv[2])));
 	Tcl_SetErrorCode(interp, "TCL", "LOOKUP", "INDEX", "scan option",
 		Tcl_GetString(objv[2]), NULL);

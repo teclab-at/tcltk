@@ -1,4 +1,5 @@
 apps/dtplite.man
+apps/mkdoc.man
 apps/nns.man
 apps/nnsd.man
 apps/nnslog.man
@@ -189,6 +190,7 @@ modules/math/combinatorics.man
 modules/math/constants.man
 modules/math/decimal.man
 modules/math/exact.man
+modules/math/figurate.man
 modules/math/filtergen.man
 modules/math/fourier.man
 modules/math/fuzzy.man
@@ -216,6 +218,7 @@ modules/md5/md5.man
 modules/md5crypt/md5crypt.man
 modules/mime/mime.man
 modules/mime/smtp.man
+modules/mkdoc/mkdoc.man
 modules/multiplexer/multiplexer.man
 modules/namespacex/namespacex.man
 modules/ncgi/ncgi.man

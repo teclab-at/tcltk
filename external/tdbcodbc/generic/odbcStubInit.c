@@ -89,6 +89,7 @@ static const char *const odbcSymbolNames[] = {
     "SQLSetConnectOption",
     "SQLSetEnvAttr",
     "SQLTablesW",
+    "SQLExecDirectW",
     NULL
     /* @END@ */
 };
@@ -143,6 +144,9 @@ OdbcInitStubs(Tcl_Interp* interp,
     SQLConfigDataSourceW = NULL;
     SQLConfigDataSource = NULL;
     SQLInstallerError = NULL;
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__OpenBSD__)
+    int abiNum = 2;
+#endif
 
     /*
      * Determine the shared library extension
@@ -157,9 +161,20 @@ OdbcInitStubs(Tcl_Interp* interp,
      * Walk the list of possible library names to find an ODBC client
      */
     status = TCL_ERROR;
-    for (i = 0; status == TCL_ERROR && odbcStubLibNames[i] != NULL; ++i) {
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__OpenBSD__)
+again:
+#endif
+     for (i = 0; status == TCL_ERROR && odbcStubLibNames[i] != NULL; ++i) {
 	path = Tcl_NewStringObj(odbcStubLibNames[i], -1);
 	Tcl_AppendObjToObj(path, shlibext);
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__OpenBSD__)
+	if (abiNum != 0) {
+	    char abiBuffer[16];
+
+	    sprintf(abiBuffer, ".%d", abiNum);
+	    Tcl_AppendObjToObj(path, Tcl_NewStringObj(abiBuffer, -1));
+	}
+#endif
 	Tcl_IncrRefCount(path);
 	Tcl_ResetResult(interp);
 
@@ -170,6 +185,13 @@ OdbcInitStubs(Tcl_Interp* interp,
 			      (void*)odbcStubs, &handle);
 	Tcl_DecrRefCount(path);
     }
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__OpenBSD__)
+    if (status == TCL_ERROR) {
+        if (--abiNum >= 0) {
+	    goto again;
+	}
+    }
+#endif
 
     /*
      * If a client library is found, then try to load ODBCINST as well.
@@ -179,6 +201,14 @@ OdbcInitStubs(Tcl_Interp* interp,
 	for (i = 0; status2 == TCL_ERROR && odbcOptLibNames[i] != NULL; ++i) {
 	    path = Tcl_NewStringObj(odbcOptLibNames[i], -1);
 	    Tcl_AppendObjToObj(path, shlibext);
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__OpenBSD__)
+	    if (abiNum != 0) {
+		char abiBuffer[16];
+
+		sprintf(abiBuffer, ".%d", abiNum);
+		Tcl_AppendObjToObj(path, Tcl_NewStringObj(abiBuffer, -1));
+	    }
+#endif
 	    Tcl_IncrRefCount(path);
 	    status2 = Tcl_LoadFile(interp, path, NULL, 0, NULL, handle2Ptr);
 	    if (status2 == TCL_OK) {

@@ -5,6 +5,7 @@
 #==============================================================================
 
 package require scrollutil_tile
+package require clampatch
 
 #
 # To set the "-autohidescrollbars" or "-setfocus" option of all scrollarea
@@ -38,6 +39,7 @@ foreach theme {alt clam classic default} {
 	    selected sunken pressed sunken active raised focus raised]
     }
 }
+unset theme
 
 if {[tk windowingsystem] eq "aqua"} {
     ttk::style theme settings aqua {
@@ -51,6 +53,7 @@ if {[tk windowingsystem] eq "aqua"} {
 		    -background systemTextBackgroundColor \
 		    -foreground systemTextColor
 	    }
+	    unset style
 	}
 
 	#
@@ -60,40 +63,10 @@ if {[tk windowingsystem] eq "aqua"} {
     }
 }
 
-foreach theme {alt classic default} {
-    #
-    # Toolbutton
-    #
-    ttk::style theme settings $theme {
-	ttk::style map Toolbutton -background \
-	    [linsert [ttk::style map Toolbutton -background] 0 selected #c3c3c3]
-    }
-}
-
-ttk::style theme settings clam {
-    #
-    # Toolbutton
-    #
-    ttk::style map Toolbutton -background \
-	[linsert [ttk::style map Toolbutton -background] 2 selected #bab5ab]
-    ttk::style map Toolbutton -lightcolor \
-	[linsert [ttk::style map Toolbutton -lightcolor] 0 selected #bab5ab]
-    ttk::style map Toolbutton -darkcolor \
-	[linsert [ttk::style map Toolbutton -darkcolor]  0 selected #bab5ab]
-
-    set pad [scaleutil::scale 3 $scrollutil::scalingpct]
-    ttk::style configure TButton -padding $pad -width -9  ;# default: 5, -11
-    ttk::style configure Heading -padding 1		  ;# default: 3
-
-    if {[catch {rename tablelist::clamTheme tablelist::_clamTheme}] == 0} {
-	proc tablelist::clamTheme {} {
-	    tablelist::_clamTheme
-
-	    variable themeDefaults
-	    set themeDefaults(-labelpady) 1		;# default: 3
-	}
-    }
-}
+#
+# Patch the clam theme styles TButton, Heading, TCheckbutton, and TRadiobutton
+#
+clampatch::patchClamTheme
 
 if {[tk windowingsystem] eq "x11"} {
     font configure TkHeadingFont -weight normal		;# default: bold
@@ -105,17 +78,30 @@ if {[tk windowingsystem] eq "x11"} {
     ttk::setTheme clam
 }
 
-#
-# Creates a toolbutton widget which appears raised when it has the focus.
-#
-proc createToolbutton {w args} {
-    eval ttk::button $w -style Small.Toolbutton $args
-
-    if {[lsearch -exact {vista xpnative} $ttk::currentTheme] >= 0} {
-	bindtags $w [linsert [bindtags $w] 1 Toolbtn]
+namespace eval styleutil {
+    #
+    # Returns the current tile theme.
+    #
+    proc getCurrentTheme {} {
+	if {[catch {ttk::style theme use} result] == 0} {
+	    return $result
+	} else {
+	    return $::ttk::currentTheme
+	}
     }
 
-    return $w
+    #
+    # Creates a toolbutton widget which appears raised when it has the focus.
+    #
+    proc createToolbutton {w args} {
+	eval ttk::button $w -style Small.Toolbutton $args
+
+	if {[lsearch -exact {vista xpnative} [getCurrentTheme]] >= 0} {
+	    bindtags $w [linsert [bindtags $w] 1 Toolbtn]
+	}
+
+	return $w
+    }
 }
 
 #

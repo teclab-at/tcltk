@@ -825,9 +825,9 @@ int sqlite3_declare_vtab(sqlite3 *db, const char *zCreateTable){
   pTab = pCtx->pTab;
   assert( IsVirtual(pTab) );
 
-  memset(&sParse, 0, sizeof(sParse));
+  sqlite3ParseObjectInit(&sParse, db);
   sParse.eParseMode = PARSE_MODE_DECLARE_VTAB;
-  sParse.db = db;
+  sParse.disableTriggers = 1;
   /* We should never be able to reach this point while loading the
   ** schema.  Nevertheless, defend against that (turn off db->init.busy)
   ** in case a bug arises. */
@@ -881,7 +881,7 @@ int sqlite3_declare_vtab(sqlite3 *db, const char *zCreateTable){
     sqlite3VdbeFinalize(sParse.pVdbe);
   }
   sqlite3DeleteTable(db, sParse.pNewTable);
-  sqlite3ParserReset(&sParse);
+  sqlite3ParseObjectReset(&sParse);
   db->init.busy = initBusy;
 
   assert( (rc&0xff)==rc );

@@ -1,6 +1,6 @@
 README: tdbcsqlite3
 
-    This is the 1.1.3 source distribution of the bridge between Tcl
+    This is the 1.1.4 source distribution of the bridge between Tcl
     Database Connectivity (TDBC) and SQLite3, an open-source SQL
     database with an in-process server.
 

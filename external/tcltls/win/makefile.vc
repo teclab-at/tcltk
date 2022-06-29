@@ -1,0 +1,24 @@
+# call nmake with additional parameter SSL_INSTALL_FOLDER= with the
+# OpenSSL instalation folder following.
+
+PROJECT=tls
+DOTVERSION = 1.7.22
+
+PRJ_INCLUDES	= -I"$(SSL_INSTALL_FOLDER)\include"
+PRJ_DEFINES =  -D NO_SSL2 -D NO_SSL3 -D _CRT_SECURE_NO_WARNINGS
+
+PRJ_LIBS = \
+	"$(SSL_INSTALL_FOLDER)\lib\libssl.lib" \
+	"$(SSL_INSTALL_FOLDER)\lib\libcrypto.lib" \
+	WS2_32.LIB GDI32.LIB ADVAPI32.LIB CRYPT32.LIB USER32.LIB
+
+PRJ_OBJS = $(TMP_DIR)\tls.obj \
+               $(TMP_DIR)\tlsBIO.obj \
+               $(TMP_DIR)\tlsIO.obj \
+               $(TMP_DIR)\tlsX509.obj
+
+!include "rules-ext.vc"
+!include "targets.vc"
+
+pkgindex: default-pkgindex
+

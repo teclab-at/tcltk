@@ -221,8 +221,6 @@
 
   - [doctools\_plugin\_apiref](tcllib/files/modules/doctools/doctools\_plugin\_apiref\.md) doctools plugin API reference
 
-  - [dtplite](tcllib/files/modules/dtplite/pkg\_dtplite\.md) Lightweight DocTools Markup Processor
-
   - [dtplite](tcllib/files/apps/dtplite\.md) Lightweight DocTools Markup Processor
 
   - [fileutil](tcllib/files/modules/fileutil/fileutil\.md) Procedures implementing some file utilities
@@ -363,6 +361,8 @@
 
   - [math::exact](tcllib/files/modules/math/exact\.md) Exact Real Arithmetic
 
+  - [math::figurate](tcllib/files/modules/math/figurate\.md) Evaluate figurate numbers
+
   - [math::filters](tcllib/files/modules/math/filtergen\.md) Digital filters
 
   - [math::fourier](tcllib/files/modules/math/fourier\.md) Discrete and fast fourier transforms
@@ -406,6 +406,10 @@
   - [md5crypt](tcllib/files/modules/md5crypt/md5crypt\.md) MD5\-based password encryption
 
   - [mime](tcllib/files/modules/mime/mime\.md) Manipulation of MIME body parts
+
+  - [mkdoc](tcllib/files/apps/mkdoc\.md) Source code documentation extractor/converter application
+
+  - [mkdoc](tcllib/files/modules/mkdoc/mkdoc\.md) Extracts and optionally converts Markdown comments in source code to HTML
 
   - [mpexpand](tcllib/files/modules/doctools/mpexpand\.md) Markup processor
 
@@ -468,6 +472,8 @@
   - [page\_util\_quote](tcllib/files/modules/page/page\_util\_quote\.md) page character quoting utilities
 
   - [picoirc](tcllib/files/modules/irc/picoirc\.md) Small and simple embeddable IRC client\.
+
+  - [pkg\_dtplite](tcllib/files/modules/dtplite/pkg\_dtplite\.md) Lightweight DocTools Markup Processor
 
   - [pki](tcllib/files/modules/pki/pki\.md) Implementation of the public key cipher
 

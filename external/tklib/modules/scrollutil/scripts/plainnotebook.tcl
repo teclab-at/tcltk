@@ -70,10 +70,10 @@ namespace eval scrollutil::pnb {
     variable cmdOpts [list add addbutton addlabel addseparator cget \
 		      closablestate configure forget hide index insert \
 		      insertbutton insertlabel insertseparator instate see \
-		      select state style tab tabpath tabs]
+		      select state style tab tabpath tabs titlepath]
 
     #
-    # Array variable used in binding scripts for the tag PlainnotebookTab:
+    # Array variable used in binding scripts for the tag PnbTab:
     #
     variable stateArr
     array set stateArr {
@@ -89,20 +89,17 @@ namespace eval scrollutil::pnb {
     # Create the descend element
     #
     proc createDescendElement {} {
-	::scrollutil::createDescendImages 
+	::scrollutil::createDescendImages
 
 	set width [expr {[image width scrollutil_descendImg] +
 			 [winfo pixels . 6p]}]
-	ttk::style theme settings default {
-	    ttk::style element create descend image [list \
-		scrollutil_descendImg \
-		disabled scrollutil_descendDisabledImg] \
-		-width $width -sticky e
-	}
+	ttk::style element create descend image [list scrollutil_descendImg \
+	    disabled scrollutil_descendDisabledImg \
+	] -width $width -sticky e
     }
     ttk::style theme settings default {
 	if {[lsearch -exact [ttk::style element names] "descend"] < 0} {
-	    createDescendElement 
+	    createDescendElement
 	}
     }
 
@@ -129,13 +126,13 @@ namespace eval scrollutil::pnb {
 
 	return 0
     }
-    createDescToolbuttonLayout 
+    createDescToolbuttonLayout
 
     #
     # Create the closebtn element
     #
     proc createClosebtnElement {} {
-	::scrollutil::createCloseImages 
+	::scrollutil::createCloseImages
 
 	#
 	# The "user*" states are not supported by
@@ -151,18 +148,15 @@ namespace eval scrollutil::pnb {
 	set width  [expr {[image width scrollutil_closeImg] +
 			  [winfo pixels . 3p]}]
 	set sticky [expr {[tk windowingsystem] eq "aqua" ? "w" : "e"}]
-	ttk::style theme settings default {
-	    ttk::style element create closebtn image [list \
-		scrollutil_closeImg \
-		$user2		scrollutil_closePressedImg \
-		$user1		scrollutil_closeHoverImg \
-		disabled	scrollutil_closeDisabledImg] \
-		-width $width -sticky $sticky
-	}
+	ttk::style element create closebtn image [list scrollutil_closeImg \
+	    $user2	scrollutil_closePressedImg \
+	    $user1	scrollutil_closeHoverImg \
+	    disabled	scrollutil_closeDisabledImg \
+	] -width $width -sticky $sticky
     }
     ttk::style theme settings default {
 	if {[lsearch -exact [ttk::style element names] "closebtn"] < 0} {
-	    createClosebtnElement 
+	    createClosebtnElement
 	}
     }
 
@@ -194,7 +188,26 @@ namespace eval scrollutil::pnb {
 
 	return 0
     }
-    createClosablePageToolbuttonLayout 
+    createClosablePageToolbuttonLayout
+
+    #
+    # Create a font for titles and labels
+    #
+    proc createTitleFont {} {
+	set size [font actual TkDefaultFont -size]
+	if {$size == 0} {
+	    set size 9
+	}
+	set factor [expr {$size * 6}]
+	set size [expr {$factor / 5}]
+	if {$factor % 5 > 2} {
+	    incr size
+	}
+
+	variable titleFont \
+	    [eval font create [font actual TkDefaultFont] -size $size]
+    }
+    createTitleFont
 
     #
     # Configure some styles
@@ -215,27 +228,44 @@ namespace eval scrollutil::pnb {
 		       ClosablePage.Toolbutton} {
 	    ttk::style configure $style -anchor w -padding 3p
 	}
-    }
-    configStyles 
+	switch [mwutil::currentTheme] {
+	    alt -
+	    classic -
+	    default {
+		set lst [linsert [ttk::style map Toolbutton -background] 0 \
+			 selected #c3c3c3]
+		ttk::style map Page.Toolbutton	       -background $lst
+		ttk::style map ClosablePage.Toolbutton -background $lst
+	    }
 
-    #
-    # Create a font for titles
-    #
-    proc createTitleFont {} {
-	set size [font actual TkDefaultFont -size]
-	if {$size == 0} {
-	    set size 9
-	}
-	set factor [expr {$size * 6}]
-	set size [expr {$factor / 5}]
-	if {$factor % 5 > 2} {
-	    incr size
+	    clam {
+		set lst [linsert [ttk::style map Toolbutton -background] 2 \
+			 selected #bab5ab]
+		ttk::style map Page.Toolbutton	       -background $lst
+		ttk::style map ClosablePage.Toolbutton -background $lst
+
+		set lst [linsert [ttk::style map Toolbutton -lightcolor] 0 \
+			 selected #bab5ab]
+		ttk::style map Page.Toolbutton	       -lightcolor $lst
+		ttk::style map ClosablePage.Toolbutton -lightcolor $lst
+
+		set lst [linsert [ttk::style map Toolbutton -darkcolor] 0 \
+			 selected #bab5ab]
+		ttk::style map Page.Toolbutton	       -darkcolor $lst
+		ttk::style map ClosablePage.Toolbutton -darkcolor $lst
+	    }
 	}
 
-	variable titleFont \
-	    [eval font create [font actual TkDefaultFont] -size $size]
+	#
+	# Configure the PnbTitle.TLabel and PnbLabel.TLabel styles
+	#
+	variable titleFont
+	ttk::style configure PnbTitle.TLabel -font $titleFont
+	ttk::style configure PnbLabel.TLabel -font $titleFont
     }
-    createTitleFont 
+    configStyles
+
+    variable currentTheme [::mwutil::currentTheme]
 }
 
 #
@@ -247,14 +277,13 @@ namespace eval scrollutil::pnb {
 # scrollutil::pnb::createBindings
 #
 # Creates the default bindings for the binding tags Plainnotebook,
-# PlainnotebookMain, and PlainnotebookTab, and extends the default bindings for
-# TNotebook.
+# PlainnotebookMain, PnbTab, PnbRadiobtn, PnbMiddleFrame, and PnbContentFrame.
 #------------------------------------------------------------------------------
 proc scrollutil::pnb::createBindings {} {
     bind Plainnotebook <KeyPress> continue
     bind Plainnotebook <FocusIn> {
 	if {[focus -lastfor %W] eq "%W"} {
-            focus %W.nb
+            focus %W.frm.sa.sf
         }
     }
     bind Plainnotebook <Map> { scrollutil::pnb::onPlainnotebookMap %W }
@@ -277,15 +306,13 @@ proc scrollutil::pnb::createBindings {} {
     #
     # Add support for moving and closing the plainnotebook tabs with the mouse
     #
-    bind PlainnotebookTab <Motion>    { scrollutil::pnb::onMotion   %W %x %y }
-    bind PlainnotebookTab <Button-1>  { scrollutil::pnb::onButton1  %W %x %y }
-    bind PlainnotebookTab <B1-Motion> { scrollutil::pnb::onB1Motion %W %X %Y }
-    bind PlainnotebookTab <Leave>     { scrollutil::pnb::onLeave    %W }
-    bind PlainnotebookTab <B1-Leave>  { scrollutil::pnb::onB1Leave  %W }
-    bind PlainnotebookTab <ButtonRelease-1> {
-	scrollutil::pnb::onButtonRel1 %W %x %y
-    }
-    bind PlainnotebookTab <Escape>    { scrollutil::pnb::onEscape   %W }
+    bind PnbTab <Motion>	  { scrollutil::pnb::onMotion     %W %x %y }
+    bind PnbTab <Button-1>	  { scrollutil::pnb::onButton1    %W %x %y }
+    bind PnbTab <B1-Motion>	  { scrollutil::pnb::onB1Motion   %W %X %Y }
+    bind PnbTab <Leave>		  { scrollutil::pnb::onLeave      %W }
+    bind PnbTab <B1-Leave>	  { scrollutil::pnb::onB1Leave    %W }
+    bind PnbTab <ButtonRelease-1> { scrollutil::pnb::onButtonRel1 %W %x %y }
+    bind PnbTab <Escape>	  { scrollutil::pnb::onEscape     %W }
 
     #
     # Define the virtual event <<Button3>> and create a binding for it
@@ -296,16 +323,54 @@ proc scrollutil::pnb::createBindings {} {
     }
     variable userDataSupported
     if {$userDataSupported} {
-	bind PlainnotebookTab <<Button3>> {
-	    scrollutil::pnb::onButton3 %W %X %Y
+	bind PnbTab <<Button3>>	  { scrollutil::pnb::onButton3    %W %X %Y }
+    }
+
+    bind PnbRadiobtn <Down> {
+	scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W]  1; break
+    }
+    bind PnbRadiobtn <Up> {
+	scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W] -1; break
+    }
+    bind PnbRadiobtn <Control-Tab> {
+	scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W]  1; break
+    }
+    bind PnbRadiobtn <Control-Shift-Tab> {
+	scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W] -1; break
+    }
+    catch {
+	bind PnbRadiobtn <Control-ISO_Left_Tab> {
+	    scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W] -1; break
 	}
     }
 
     #
-    # Extend the default bindings for TNotebook
+    # Implement the navigation between the selectable plainnotebook tabs via
+    # the mouse wheel (TIP 591).  Use our own bindMouseWheel procedure rather
+    # than ttk::bindMouseWheel, which was not present in tile before Dec. 2008.
     #
-    bind TNotebook <Up>   { ttk::notebook::CycleTab %W -1; break }
-    bind TNotebook <Down> { ttk::notebook::CycleTab %W  1; break }
+    ::scrollutil::bindMouseWheel PnbTab \
+	{scrollutil::pnb::cycleTab [scrollutil::pnb::tabToPnb %W]}
+    ::scrollutil::bindMouseWheel PnbMiddleFrame \
+	{scrollutil::pnb::cycleTab [scrollutil::pnb::mfToPnb %W]}
+
+    bind PnbContentFrame <Configure> { scrollutil::pnb::onCfConfigure %W %w }
+
+    #
+    # Override the library procedure ::ttk::notebook::TLCycleTab
+    #
+    proc ::ttk::notebook::TLCycleTab {w dir} {
+	set nb [EnclosingNotebook $w]
+	if {$nb ne ""} {
+	    if {[winfo class $nb] eq "Plainnotebook"} {
+		::scrollutil::pnb::cycleTab $nb $dir
+	    } else {
+		CycleTab $nb $dir
+	    }
+
+	    return -code break
+	}
+    }
 }
 
 #
@@ -370,11 +435,11 @@ proc scrollutil::plainnotebook args {
     set frm [ttk::frame $win.frm -padding 0]
     pnb::configFrame $win.frm
     if {[lsearch -exact [image names] "scrollutil_ascendImg"] < 0} {
-	createAscendImage 
+	createAscendImage
     }
     set ascend [ttk::button $frm.ascend -style Toolbutton \
 		-image scrollutil_ascendImg]
-    set title [ttk::label $frm.title -font $pnb::titleFont]
+    set title [ttk::label $frm.title -style PnbTitle.TLabel]
     set sep [ttk::separator $frm.sep]
 
     #
@@ -385,9 +450,14 @@ proc scrollutil::plainnotebook args {
     set charWidth [font measure TkDefaultFont -displayof $win "0"]
     set sf [scrollableframe $sa.sf -borderwidth 0 -contentheight 0 \
 	    -contentwidth 0 -fitcontentheight 0 -fitcontentwidth 0 -height 0 \
-	    -relief flat -takefocus 0 -xscrollincrement $charWidth \
-	    -yscrollincrement 0 -width 0]
+	    -relief flat -xscrollincrement $charWidth -yscrollincrement 0 \
+	    -width 0]
     $sa setwidget $sf
+
+    if {$::tcl_platform(platform) ne "windows" || ($::tk_version >= 8.6 &&
+	[package vcompare $::tk_patchLevel "8.6b2"] >= 0)} {
+	disableScrollingByWheel $sf
+    }
 
     grid $ascend -row 0 -column 0 -padx {1.5p 0} -pady 1.5p
     grid $title  -row 0 -column 1 -sticky w -padx 3p -pady 1.5p
@@ -399,19 +469,29 @@ proc scrollutil::plainnotebook args {
     grid remove $ascend $title $sep
 
     #
-    # Create a plain ttk::notebook widget
+    # Create a plain ttk::notebook widget and deactivate
+    # the TNotebook keyboard bindings for it
     #
     set nb [ttk::notebook $win.nb -style Plainnotebook.TNotebook]
+    foreach event {<Right> <Left> <Control-Tab> <Control-Shift-Tab>} {
+	bind $nb $event break
+    }
+    catch {bind $nb <Control-ISO_Left_Tab> break}
 
     pack $frm -side left -fill y
     pack $nb  -side left -expand 1 -fill both
 
-    set data(sf)	  $sf
-    set data(cf)	  [$sf contentframe]
-    set data(cfWidth)	   0
-    set data(rbCount)	   0
-    set data(auxCount)	   0
-    set data(currentPage)  ""
+    array set data [list \
+	sf	    $sf \
+	cf	    [$sf contentframe] \
+	cfWidth	    0 \
+	rbCount	    0 \
+	auxCount    0 \
+	currentPage "" \
+    ]
+
+    bindtags $sf.mf    [linsert [bindtags $sf.mf]    1 PnbMiddleFrame]
+    bindtags $data(cf) [linsert [bindtags $data(cf)] 1 PnbContentFrame]
 
     #
     # Configure the widget according to the command-line
@@ -433,13 +513,6 @@ proc scrollutil::plainnotebook args {
     interp alias {} ::$win {} scrollutil::pnb::plainnotebookWidgetCmd $win
 
     menu $win._m_e_n_u_ -tearoff 0
-
-    if {$::tcl_platform(platform) ne "windows" || ($::tk_version >= 8.6 &&
-	[package vcompare $::tk_patchLevel "8.6b2"] >= 0)} {
-	createWheelEventBindings all
-    }
-
-    bind $data(cf) <Configure> { scrollutil::pnb::onCfConfigure %W %w }
 
     #
     # Deactivate the navigation between the tabs of the
@@ -616,12 +689,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 
 	    if {$isNew} {
 		set rb [ttk::radiobutton $data(cf).rb$data(rbCount) \
-			-style $data(rbStyle) -takefocus 0 \
+			-style $data(rbStyle) \
 			-command [list $nb select $widget] -value $widget \
 			-variable ::scrollutil::ns${win}::data(selectedPage)]
 		incr data(rbCount)
 		set tabPath $rb
-		bindtags $rb [linsert [bindtags $rb] 1 PlainnotebookTab]
+		bindtags $rb [linsert [bindtags $rb] 1 PnbTab PnbRadiobtn]
 	    } else {
 		set tabPath [widgetToTab $win $widget]
 	    }
@@ -656,7 +729,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 		     -command [list $pm select $pageIdx]]
 	    grid $aux -sticky we
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    return $aux
 	}
 
@@ -674,13 +747,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    $nb add [ttk::frame $nb.$name] -compound left -text $text \
 		-image $img -state disabled
 
-	    variable titleFont
-	    set aux [ttk::label $data(cf).$name -font $titleFont \
+	    set aux [ttk::label $data(cf).$name -style PnbLabel.TLabel \
 		     -takefocus 0 -compound left -text $text -image $img \
 		     -padding 3p]
 	    grid $aux -sticky we
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    return $aux
 	}
 
@@ -695,7 +767,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    set aux [ttk::separator $data(cf).$name -takefocus 0]
 	    grid $aux -sticky we
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    return $aux
 	}
 
@@ -718,8 +790,9 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set tabId [lindex $args 1]
-	    set tabIdx [$nb index $tabId]
-	    if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
+	    if {[catch {::$win index $tabId} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
 		return -code error "tab index $tabId out of bounds"
 	    }
 
@@ -753,7 +826,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 		mwutil::wrongNumArgs "$win $cmd tab"
 	    }
 
-	    if {[catch {$nb index [lindex $args 1]} tabIdx] == 0 &&
+	    if {[catch {::$win index [lindex $args 1]} tabIdx] == 0 &&
 		$tabIdx >= 0 && $tabIdx < [$nb index end]} {
 		set widget [lindex [$nb tabs] $tabIdx]
 		set tabPath [widgetToTab $win $widget]
@@ -772,7 +845,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	}
 
 	hide {
-	    if {[catch {$nb index [lindex $args 1]} tabIdx] == 0 &&
+	    if {[catch {::$win index [lindex $args 1]} tabIdx] == 0 &&
 		$tabIdx >= 0 && $tabIdx < [$nb index end]} {
 		set widget [lindex [$nb tabs] $tabIdx]
 		set tabPath [widgetToTab $win $widget]
@@ -814,7 +887,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 
 		return ""
 	    } else {
-		set code [catch {eval [list $nb $cmd $tabId]} result]
+		set code [catch {$nb $cmd $tabId} result]
 		return -code $code $result
 	    }
 	}
@@ -828,11 +901,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 
 	    if {$isNew} {
 		set rb [ttk::radiobutton $data(cf).rb$data(rbCount) \
-			-style $data(rbStyle) -takefocus 0 \
+			-style $data(rbStyle) \
 			-command [list $nb select $widget] -value $widget \
 			-variable ::scrollutil::ns${win}::data(selectedPage)]
 		incr data(rbCount)
 		set tabPath $rb
+		bindtags $rb [linsert [bindtags $rb] 1 PnbTab PnbRadiobtn]
 	    } else {
 		set tabPath [widgetToTab $win $widget]
 	    }
@@ -848,11 +922,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set pos [lindex $args 1]
-	    if {$pos ne "end"} {
-		set tabIdx [$nb index $pos]
-		if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
-		    return -code error "tab index $pos out of bounds"
-		}
+	    if {$pos eq "end"} {
+		set tabIdx end
+	    } elseif {[catch {::$win index $pos} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0} {
+		return -code error "tab index $pos out of bounds"
 	    }
 	    set pm [winfo parent $win]
 	    if {[winfo class $pm] ne "Pagesman"} {
@@ -867,14 +942,14 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set name aux$data(auxCount)
-	    $nb insert $pos [ttk::frame $nb.$name] -compound left -text $text \
-		-image $img -state disabled
+	    $nb insert $tabIdx [ttk::frame $nb.$name] -compound left \
+		-text $text -image $img -state disabled
 
 	    set aux [ttk::button $data(cf).$name -style Desc.Toolbutton \
 		     -takefocus 0 -compound left -text $text -image $img \
 		     -command [list $pm select $pageIdx]]
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    reorderTabs $win
 	    return $aux
 	}
@@ -885,11 +960,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set pos [lindex $args 1]
-	    if {$pos ne "end"} {
-		set tabIdx [$nb index $pos]
-		if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
-		    return -code error "tab index $pos out of bounds"
-		}
+	    if {$pos eq "end"} {
+		set tabIdx end
+	    } elseif {[catch {::$win index $pos} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0} {
+		return -code error "tab index $pos out of bounds"
 	    }
 	    foreach {text img} [lrange $args 2 end] {}
 	    if {$img ne "" && [lsearch -exact [image names] $img] < 0} {
@@ -897,15 +973,14 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set name aux$data(auxCount)
-	    $nb insert $pos [ttk::frame $nb.$name] -compound left -text $text \
-		-image $img -state disabled
+	    $nb insert $tabIdx [ttk::frame $nb.$name] -compound left \
+		-text $text -image $img -state disabled
 
-	    variable titleFont
-	    set aux [ttk::label $data(cf).$name -font $titleFont \
+	    set aux [ttk::label $data(cf).$name -style PnbLabel.TLabel \
 		     -takefocus 0 -compound left -text $text -image $img \
 		     -padding 3p]
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    reorderTabs $win
 	    return $aux
 	}
@@ -916,19 +991,20 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set pos [lindex $args 1]
-	    if {$pos ne "end"} {
-		set tabIdx [$nb index $pos]
-		if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
-		    return -code error "tab index $pos out of bounds"
-		}
+	    if {$pos eq "end"} {
+		set tabIdx end
+	    } elseif {[catch {::$win index $pos} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0} {
+		return -code error "tab index $pos out of bounds"
 	    }
 
 	    set name aux$data(auxCount)
-	    $nb insert $pos [ttk::frame $nb.$name] -state disabled
+	    $nb insert $tabIdx [ttk::frame $nb.$name] -state disabled
 
 	    set aux [ttk::separator $data(cf).$name -takefocus 0]
 	    incr data(auxCount)
-	    bindtags $aux [linsert [bindtags $aux] 1 PlainnotebookTab]
+	    bindtags $aux [linsert [bindtags $aux] 1 PnbTab]
 	    reorderTabs $win
 	    return $aux
 	}
@@ -948,20 +1024,15 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 	}
 
-	select -
-	tabs {
-	    set code [catch {eval [list $nb $cmd] $argList} result]
-	    return -code $code $result
-	}
-
 	see {
 	    if {$argCount != 2} {
 		mwutil::wrongNumArgs "$win $cmd tabId"
 	    }
 
 	    set tabId [lindex $args 1]
-	    set tabIdx [$nb index $tabId]
-	    if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
+	    if {[catch {::$win index $tabId} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
 		return -code error "tab index $tabId out of bounds"
 	    }
 
@@ -969,6 +1040,12 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    set tabPath [widgetToTab $win $widget]
 	    $data(sf) see $tabPath
 	    return ""
+	}
+
+	select -
+	tabs {
+	    set code [catch {eval [list $nb $cmd] $argList} result]
+	    return -code $code $result
 	}
 
 	state {
@@ -998,7 +1075,7 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	}
 
 	tab {
-	    if {[catch {$nb index [lindex $args 1]} tabIdx] == 0} {
+	    if {[catch {::$win index [lindex $args 1]} tabIdx] == 0} {
 		set widget [lindex [$nb tabs] $tabIdx]
 		set tabPath [widgetToTab $win $widget]
 		set class [winfo class $tabPath]
@@ -1047,13 +1124,22 @@ proc scrollutil::pnb::plainnotebookWidgetCmd {win args} {
 	    }
 
 	    set tabId [lindex $args 1]
-	    set tabIdx [$nb index $tabId]
-	    if {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
+	    if {[catch {::$win index $tabId} tabIdx] != 0} {
+		return -code error $tabIdx
+	    } elseif {$tabIdx < 0 || $tabIdx >= [$nb index end]} {
 		return -code error "tab index $tabId out of bounds"
 	    }
 
 	    set widget [lindex [$nb tabs] $tabIdx]
 	    return [widgetToTab $win $widget]
+	}
+
+	titlepath {
+	    if {$argCount != 1} {
+		mwutil::wrongNumArgs "$win $cmd"
+	    }
+
+	    return $win.frm.title
 	}
     }
 }
@@ -1271,13 +1357,20 @@ proc scrollutil::pnb::onThemeChanged w {
 	::scrollutil::getForegroundColors normalFg disabledFg
 	scrollutil_descendImg	      configure -foreground $normalFg
 	scrollutil_descendDisabledImg configure -foreground $disabledFg
+
 	if {[lsearch -exact [image names] "scrollutil_ascendImg"] >= 0} {
 	    scrollutil_ascendImg      configure -foreground $normalFg
 	}
 
-	createDescToolbuttonLayout 
-	createClosablePageToolbuttonLayout
-	configStyles 
+	variable currentTheme
+	set newTheme [::mwutil::currentTheme]
+	if {$newTheme ne $currentTheme} {
+	    set currentTheme $newTheme
+
+	    createDescToolbuttonLayout
+	    createClosablePageToolbuttonLayout
+	    configStyles
+	}
     } else {
 	configFrame $w.frm
 	after 100 [list scrollutil::pnb::setYScrollIncr $w]
@@ -1302,7 +1395,7 @@ proc scrollutil::pnb::onMotion {tabPath x y} {
 # scrollutil::pnb::onButton1
 #------------------------------------------------------------------------------
 proc scrollutil::pnb::onButton1 {tabPath x y} {
-    set win [tabToPlainNb $tabPath]
+    set win [tabToPnb $tabPath]
     ::$win instate disabled {
 	return ""
     }
@@ -1394,7 +1487,7 @@ proc scrollutil::pnb::onButtonRel1 {tabPath x y} {
     variable user2
     $tabPath state [list !$user2 !$user1]
 
-    set win [tabToPlainNb $tabPath]
+    set win [tabToPnb $tabPath]
 
     variable stateArr
     variable userDataSupported
@@ -1436,7 +1529,7 @@ proc scrollutil::pnb::onButtonRel1 {tabPath x y} {
 # scrollutil::pnb::onEscape
 #------------------------------------------------------------------------------
 proc scrollutil::pnb::onEscape tabPath {
-    set win [tabToPlainNb $tabPath]
+    set win [tabToPnb $tabPath]
 
     variable stateArr
     if {$stateArr(targetIdx) >= 0} {
@@ -1452,7 +1545,7 @@ proc scrollutil::pnb::onEscape tabPath {
 # scrollutil::pnb::onButton3
 #------------------------------------------------------------------------------
 proc scrollutil::pnb::onButton3 {tabPath rootX rootY} {
-    set win [tabToPlainNb $tabPath]
+    set win [tabToPnb $tabPath]
     ::$win instate disabled {
 	return ""
     }
@@ -1486,6 +1579,29 @@ proc scrollutil::pnb::postMenu {menu rootX rootY} {
     catch {ttk::theme::[mwutil::currentTheme]::setMenuColors $menu}
 
     tk_popup $menu $rootX $rootY
+}
+
+#------------------------------------------------------------------------------
+# scrollutil::pnb::cycleTab
+#------------------------------------------------------------------------------
+proc scrollutil::pnb::cycleTab {win dir {divisor 1.0}} {
+    set currentIdx [::$win index current]
+    if {$currentIdx >= 0} {
+	set tabCount [::$win index end]
+	set d [expr {$dir/$divisor}]
+	set d [expr {int($d > 0 ? ceil($d) : floor($d))}]
+	set selectIdx [expr {($currentIdx + $d) % $tabCount}]
+	set step [expr {$d > 0 ? 1 : -1}]
+	while {([winfo class [::$win tabpath $selectIdx]] ne "TRadiobutton" ||
+		[::$win tab $selectIdx -state] ne "normal") &&
+	       ($selectIdx != $currentIdx)} {
+	    set selectIdx [expr {($selectIdx + $step) % $tabCount}]
+	}
+
+	if {$selectIdx != $currentIdx} {
+	    ::$win select $selectIdx
+	}
+    }
 }
 
 #------------------------------------------------------------------------------
@@ -1572,14 +1688,26 @@ proc scrollutil::pnb::tabToWidget {win tabPath} {
 }
 
 #------------------------------------------------------------------------------
-# scrollutil::pnb::tabToPlainNb
+# scrollutil::pnb::tabToPnb
 #
-# Returns the path name of the plainnotebokk widget correspondig to a given tab
+# Returns the path name of the plainnotebook widget correspondig to a given tab
 # (a ttk::radiobutton, ttk::button, ttk::label, or ttk::separator).
 #------------------------------------------------------------------------------
-proc scrollutil::pnb::tabToPlainNb tabPath {
+proc scrollutil::pnb::tabToPnb tabPath {
     set cf  [winfo parent $tabPath]
     set sf  [winfo parent [winfo parent $cf]]
+    set frm [winfo parent [winfo parent $sf]]
+    return  [winfo parent $frm]
+}
+
+#------------------------------------------------------------------------------
+# scrollutil::pnb::mfToPnb
+#
+# Returns the path name of the plainnotebook widget correspondig to the middle
+# frame of its scrollableframe.
+#------------------------------------------------------------------------------
+proc scrollutil::pnb::mfToPnb mf {
+    set sf  [winfo parent $mf]
     set frm [winfo parent [winfo parent $sf]]
     return  [winfo parent $frm]
 }

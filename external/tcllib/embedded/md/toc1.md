@@ -297,7 +297,7 @@
 
       * [dtplite]()
 
-          + [dtplite](tcllib/files/modules/dtplite/pkg\_dtplite\.md) Lightweight DocTools Markup Processor
+          + [pkg\_dtplite](tcllib/files/modules/dtplite/pkg\_dtplite\.md) Lightweight DocTools Markup Processor
 
       * [fileutil]()
 
@@ -505,6 +505,8 @@
 
           + [math::exact](tcllib/files/modules/math/exact\.md) Exact Real Arithmetic
 
+          + [math::figurate](tcllib/files/modules/math/figurate\.md) Evaluate figurate numbers
+
           + [math::filters](tcllib/files/modules/math/filtergen\.md) Digital filters
 
           + [math::fourier](tcllib/files/modules/math/fourier\.md) Discrete and fast fourier transforms
@@ -558,6 +560,10 @@
           + [mime](tcllib/files/modules/mime/mime\.md) Manipulation of MIME body parts
 
           + [smtp](tcllib/files/modules/mime/smtp\.md) Client\-side tcl implementation of the smtp protocol
+
+      * [mkdoc]()
+
+          + [mkdoc](tcllib/files/modules/mkdoc/mkdoc\.md) Extracts and optionally converts Markdown comments in source code to HTML
 
       * [multiplexer]()
 

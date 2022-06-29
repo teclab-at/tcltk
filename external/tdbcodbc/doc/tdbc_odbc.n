@@ -207,6 +207,22 @@ tdbc::odbc::datasource configure \\
 Creates a new, empty Microsoft Access database in the file identified
 by "$fileName". No connection is made to the database until the
 program calls \fBtdbc::odbc::connection create\fR.
+.SH "ADDITIONAL CONNECTION METHODS"
+In addition to the usual methods on the tdbc::connection(n) object,
+connections to an ODBC database support one additional method:
+.IP \fI$connection\fR \fBevaldirect\fR \fIsqlStatement\fR
+This method takes the given driver-native SQL code \fIsqlStatement\fR and
+evaluates it without preparing it. The statement is not tokenized and must
+not contain variable substitutions.  Evaluating the \fIsqlStatement\fR
+produces a result set of zero or more rows.  The result of the command is a
+list of dictionaries, with one list element per row in the result set (in
+a similar format to the list returned by \fI$connection allrows -as dicts\fI).
+\fIThis command is not recommended\fR for anything where the usual
+\fIprepare\fR or \fIpreparecall\fR methods work correctly. It is
+provided so that data management language statements that are not
+implemented by the driver's prepared statement API (such as \fBCREATE
+DATABASE\fR or \fBCREATE PROCEDURE\fR), or that contain characters that
+are reserved by the tokenizer, can be executed.
 .SH "SEE ALSO"
 tdbc(n), tdbc::connection(n),  tdbc::resultset(n), tdbc::statement(n)
 .SH "KEYWORDS"

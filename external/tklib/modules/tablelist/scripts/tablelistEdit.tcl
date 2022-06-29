@@ -130,7 +130,7 @@ namespace eval tablelist {
 	    $name-reservedKeys	{Left Right Up Down} \
 	]
     }
-    addTkCoreWidgets 
+    addTkCoreWidgets
 
     #
     # Register the tile widgets ttk::entry, ttk::spinbox, ttk::combobox,
@@ -244,7 +244,7 @@ namespace eval tablelist {
 	}
     }
     if {$::tk_version >= 8.4 && [llength [package versions tile]] > 0} {
-	addTileWidgets 
+	addTileWidgets
     }
 }
 
@@ -473,7 +473,7 @@ proc tablelist::addIncrDateTimeWidget {widgetType args} {
 		focus $itk_component(time)	;# added; the rest is unchanged
 		grab release $itk_component(popup)
 		$itk_component(iconbutton) configure -relief raised
-		destroy $itk_component(popup) 
+		destroy $itk_component(popup)
 		bind $itk_component(iconbutton) <Button-1> \
 		     [itcl::code $this _popup]
 	    }
@@ -1222,7 +1222,7 @@ proc tablelist::createTileEntry {w args} {
     if {$::tk_version < 8.5 || [regexp {^8\.5a[1-5]$} $::tk_patchLevel]} {
 	package require tile 0.6
     }
-    createTileAliases 
+    createTileAliases
 
     #
     # The style of the tile entry widget should have -borderwidth
@@ -1274,7 +1274,7 @@ proc tablelist::createTileSpinbox {w args} {
     if {$::tk_version < 8.5 || [regexp {^8\.5a[1-5]$} $::tk_patchLevel]} {
 	package require tile 0.8.3
     }
-    createTileAliases 
+    createTileAliases
 
     #
     # The style of the tile spinbox widget should have -borderwidth
@@ -1333,7 +1333,7 @@ proc tablelist::createTileCombobox {w args} {
     if {$::tk_version < 8.5 || [regexp {^8\.5a[1-5]$} $::tk_patchLevel]} {
 	package require tile 0.6
     }
-    createTileAliases 
+    createTileAliases
 
     set win [getTablelistPath $w]
     variable currentTheme
@@ -1386,7 +1386,7 @@ proc tablelist::createTileMenubutton {w args} {
     if {$::tk_version < 8.5 || [regexp {^8\.5a[1-5]$} $::tk_patchLevel]} {
 	package require tile 0.6
     }
-    createTileAliases 
+    createTileAliases
 
     styleConfig Tablelist.TMenubutton -anchor w -justify left -padding 1 \
 				      -relief raised
@@ -1581,9 +1581,11 @@ proc tablelist::doEditCell {win row col restore {cmd ""} {charPos -1}} {
     seeCell $win $row $col
     set netRowHeight [lindex [bboxSubCmd $win $row] 3]
     set frameHeight [expr {$netRowHeight + 6}]	;# because of the -pady -3 below
+    set frameWidth 7				;# because of the -padx -3 below
     set f $data(bodyFrm)
     tk::frame $f -borderwidth 0 -container 0 -height $frameHeight \
-		 -highlightthickness 0 -relief flat -takefocus 0
+		 -highlightthickness 0 -relief flat -takefocus 0 \
+		 -width $frameWidth
     catch {$f configure -padx 0 -pady 0}
     bindtags $f [lreplace [bindtags $f] 1 1 $data(editwinTag) TablelistEdit]
     set name [getEditWindow $win $row $col]
@@ -1635,7 +1637,7 @@ proc tablelist::doEditCell {win row col restore {cmd ""} {charPos -1}} {
 	array set tablelist::ns${tablelist::W}::data \
 	      {editKey ""  editRow -1  editCol -1  inEditWin 0  prevCell -1,-1}
 	if {[catch {tk::CancelRepeat}] != 0} {
-	    tkCancelRepeat 
+	    tkCancelRepeat
 	}
 	if {[catch {ttk::CancelRepeat}] != 0} {
 	    catch {tile::CancelRepeat}
@@ -1700,6 +1702,12 @@ proc tablelist::doEditCell {win row col restore {cmd ""} {charPos -1}} {
 	set idx [lsearch -exact $bindTags [winfo class $comp]]
 	bindtags $comp [linsert $bindTags [incr idx] TablelistEditBreak]
     }
+
+    #
+    # Set the -exportselection option to 0 after saving its original value
+    #
+    set data(exportselOrig) $data(-exportselection)
+    doConfig $win -exportselection 0
 
     #
     # Restore or initialize some of the edit window's data
@@ -1835,64 +1843,7 @@ proc tablelist::doEditCell {win row col restore {cmd ""} {charPos -1}} {
     }
 
     if {$data(-autofinishediting)} {
-	#
-	# Make sure that selecting a combobox or menu
-	# entry will automatically finish the editing
-	#
-	switch $class {
-	    TCombobox {
-		bind $w <<ComboboxSelected>> \
-		    {+ [tablelist::getTablelistPath %W] finishediting}
-	    }
-
-	    ComboBox {					;# BWidget
-		set cmd [$w cget -modifycmd]
-		$w configure -modifycmd [format {
-		    eval [list %s]
-		    after 0 [list %s finishediting]
-		} $cmd $win]
-	    }
-
-	    Combobox {					;# IWidgets or Oakley
-		if {[catch {$w cget -selectioncommand} cmd] == 0} {  ;# IWidgets
-		    set cmd [$w cget -selectioncommand]
-		    $w configure -selectioncommand [format {
-			eval [list %s]
-			after 0 [list %s finishediting]
-		    } $cmd $win]
-		} elseif {[catch {$w cget -command} cmd] == 0} {     ;# Oakley
-		    if {[string length $cmd] == 0} {
-			proc ::tablelist::comboboxCmd {w val} [format {
-			    after 0 [list %s finishediting]
-			} $win]
-		    } else {
-			proc ::tablelist::comboboxCmd {w val} [format {
-			    eval [list %s $w $val]
-			    after 0 [list %s finishediting]
-			} $cmd $win]
-		    }
-		    $w configure -command ::tablelist::comboboxCmd
-		}
-	    }
-
-	    Menubutton -
-	    TMenubutton {
-		set menu [$w cget -menu]
-		set last [$menu index last]
-		if {[string compare $last "none"] != 0} {
-		    for {set idx 0} {$idx <= $last} {incr idx} {
-			if {[regexp {^(command|checkbutton|radiobutton)$} \
-			     [$menu type $idx]]} {
-			    set cmd [$menu entrycget $idx -command]
-			    $menu entryconfigure $idx -command [format {
-				eval [list %s]
-				after 0 [list %s finishediting]
-			    } $cmd $win]
-			}
-		    }
-		}
-	    }
-	}
+	configAutoFinishEditing $win $w
     }
 
     #
@@ -1991,6 +1942,11 @@ proc tablelist::doCancelEditing win {
     set userData [list $row $col]
     genVirtualEvent $win <<TablelistCellRestored>> $userData
 
+    #
+    # Restore the value of the -exportselection option
+    #
+    doConfig $win -exportselection $data(exportselOrig)
+
     updateViewWhenIdle $win
     return ""
 }
@@ -2074,6 +2030,11 @@ proc tablelist::doFinishEditing {win {destroy 1}} {
 
 	    doCellConfig $row $col $win -text $text
 	    set result 1
+
+	    #
+	    # Restore the value of the -exportselection option
+	    #
+	    doConfig $win -exportselection $data(exportselOrig)
 	} else {
 	    set result 0
 	}
@@ -2204,6 +2165,69 @@ proc tablelist::setMentryCursor {w number} {
 		focus $entry
 		$entry icursor end
 		return ""
+	    }
+	}
+    }
+}
+
+#------------------------------------------------------------------------------
+# tablelist::configAutoFinishEditing
+#
+# Makes sure that selecting an entry of the combobox or menu widget w used for
+# interactive cell editing in the tablelist widget win will automatically
+# finish the editing.
+#------------------------------------------------------------------------------
+proc tablelist::configAutoFinishEditing {win w} {
+    switch [winfo class $w] {
+	TCombobox {
+	    bind $w <<ComboboxSelected>> \
+		{+ [tablelist::getTablelistPath %W] finishediting}
+	}
+
+	ComboBox {					;# BWidget
+	    set cmd [$w cget -modifycmd]
+	    $w configure -modifycmd [format {
+		eval [list %s]
+		after 0 [list %s finishediting]
+	    } $cmd $win]
+	}
+
+	Combobox {					;# IWidgets or Oakley
+	    if {[catch {$w cget -selectioncommand} cmd] == 0} {	;# IWidgets
+		$w configure -selectioncommand [format {
+		    eval [list %s]
+		    after 0 [list %s finishediting]
+		} $cmd $win]
+	    } elseif {[catch {$w cget -command} cmd] == 0} {	;# Oakley
+		if {[string length $cmd] == 0} {
+		    proc ::tablelist::comboboxCmd {w val} [format {
+			after 0 [list %s finishediting]
+		    } $win]
+		} else {
+		    proc ::tablelist::comboboxCmd {w val} [format {
+			eval [list %s $w $val]
+			after 0 [list %s finishediting]
+		    } $cmd $win]
+		}
+		$w configure -command ::tablelist::comboboxCmd
+	    }
+	}
+
+	Menubutton -
+	TMenubutton {
+	    set menu [$w cget -menu]
+	    set last [$menu index last]
+	    if {[string compare $last "none"] != 0} {
+		for {set idx 0} {$idx <= $last} {incr idx} {
+		    if {[regexp {^(command|checkbutton|radiobutton)$} \
+			 [$menu type $idx]]} {
+			set cmd [$menu entrycget $idx -command]
+			$menu entryconfigure $idx -command [format {
+			    eval [list %s]
+			    after 0 [list %s finishediting]
+			} $cmd $win]
+		    }
+		}
 	    }
 	}
     }

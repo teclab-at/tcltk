@@ -6,7 +6,7 @@
 # Copyright (c) 2004-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
-package require tablelist 6.17
+package require tablelist 6.19
 
 wm title . "Tk Library Scripts"
 
@@ -150,7 +150,7 @@ proc viewFile {tbl key} {
     # Create a vertically scrolled text widget as a grandchild of the toplevel
     #
     set tf $top.tf
-    frame $tf -class ScrollArea 
+    frame $tf -class ScrollArea
     set txt $tf.txt
     set vsb $tf.vsb
     text $txt -background white -font TkFixedFont -setgrid yes \

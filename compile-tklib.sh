@@ -33,7 +33,7 @@ chmod ug+x $INSTALLDIR/bin/*
 echo -n "Copying extras ... "
 ## copy help files
 mkdir -p $iSHAREDIR/doc/$MODULE
-rsync -a $COMPILEDIR/$MODULE/embedded/www/* $iSHAREDIR/doc/$MODULE/
+rsync -a $COMPILEDIR/$MODULE/idoc/www/* $iSHAREDIR/doc/$MODULE/
 
 ## copy missing files
 ## seems to be fixed

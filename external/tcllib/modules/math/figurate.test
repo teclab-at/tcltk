@@ -1,14 +1,12 @@
 # -*- tcl -*-
 # figurate.test --
-#    Test cases for the ::math::special package (figurate numbers)
+#    Test cases for the ::math::figurate package (figurate numbers)
 #
 # This file contains a collection of tests for one or more of the Tcllib
 # procedures.  Sourcing this file into Tcl runs the tests and
 # generates output for errors.  No output means no errors were found.
 #
-# Copyright (c) 2004 by Arjen Markus.  All rights reserved.
-#
-# RCS: @(#) $Id: elliptic.test,v 1.12 2007/08/21 17:33:00 andreas_kupries Exp $
+# Copyright (c) 2022 by Arjen Markus.  All rights reserved.
 
 # -------------------------------------------------------------------------
 
@@ -16,7 +14,7 @@ source [file join \
         [file dirname [file dirname [file join [pwd] [info script]]]] \
         devtools testutilities.tcl]
 
-testsNeedTcl     8.5
+testsNeedTcl     8.6
 testsNeedTcltest 2.1
 
 testing {
@@ -435,7 +433,7 @@ test "figurate-1.3" "Centered square numbers" \
             lappend result [::math::figurate::centeredSquare $n]
         }
         set result
-    } -result {1 5 13  25 41 61  85 113 145 181}
+    } -result {0 1 5 13  25 41 61  85 113 145}
 
 test "figurate-1.4" "Centered cube numbers" \
     -match numbers -body {
@@ -445,7 +443,7 @@ test "figurate-1.4" "Centered cube numbers" \
             lappend result [::math::figurate::centeredCube $n]
         }
         set result
-    } -result {1 9 35  91 189 341  559 855 1241 1729}
+    } -result {0 1 9 35  91 189 341  559 855 1241}
 
 test "figurate-1.5" "Centered pentagonal numbers" \
     -match numbers -body {
@@ -455,7 +453,7 @@ test "figurate-1.5" "Centered pentagonal numbers" \
             lappend result [::math::figurate::centeredPentagonal $n]
         }
         set result
-    } -result {1 6 16  31 51 76  106 141 181 226}
+    } -result {0 1 6 16  31 51 76  106 141 181}
 
 test "figurate-1.6" "Centered hexagonal numbers" \
     -match numbers -body {
@@ -465,7 +463,7 @@ test "figurate-1.6" "Centered hexagonal numbers" \
             lappend result [::math::figurate::centeredHexagonal $n]
         }
         set result
-    } -result {1 7 19  37 61 91  127 169 217 271}
+    } -result {0 1 7 19  37 61 91  127 169 217}
 
 test "figurate-1.7" "Decagonal numbers" \
     -match numbers -body {
@@ -548,7 +546,7 @@ test "figurate-1.13" "Pentatope numbers" \
         set result
     } -result {0 1 5  15 35 70  126 210 330 495}
 
-test "figurate-1.14" "Centered trinagular numbers" \
+test "figurate-1.14" "Centered triangular numbers" \
     -match numbers -body {
         set result {}
 
@@ -556,7 +554,7 @@ test "figurate-1.14" "Centered trinagular numbers" \
             lappend result [::math::figurate::centeredTriangular $n]
         }
         set result
-    } -result {1 4 10 19 31 46 64 85 109 136}
+    } -result {0 1 4 10 19 31 46 64 85 109}
 
 
 # Skipping as trivial: square, cubic, biquadratic

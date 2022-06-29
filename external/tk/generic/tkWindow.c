@@ -658,7 +658,7 @@ TkAllocWindow(
     winPtr->inputContext = NULL;
     winPtr->tagPtr = NULL;
     winPtr->numTags = 0;
-    winPtr->optionLevel = -1;
+    winPtr->optionLevel = TCL_INDEX_NONE;
     winPtr->selHandlerList = NULL;
     winPtr->geomMgrPtr = NULL;
     winPtr->geomData = NULL;
@@ -1322,7 +1322,7 @@ void
 Tk_DestroyWindow(
     Tk_Window tkwin)		/* Window to destroy. */
 {
-    TkWindow *winPtr = (TkWindow *) tkwin;
+    TkWindow *winPtr = (TkWindow *)tkwin;
     TkDisplay *dispPtr = winPtr->dispPtr;
     XEvent event;
     TkHalfdeadWindow *halfdeadPtr, *prev_halfdeadPtr;
@@ -1439,10 +1439,10 @@ Tk_DestroyWindow(
 	 * (otherwise, for example, the Tk window may appear to exist even
 	 * though its X window is gone; this could cause errors). Special
 	 * note: it's possible that the embedded window has already been
-	 * deleted, in which case TkpGetOtherWindow will return NULL.
+	 * deleted, in which case Tk_GetOtherWindow will return NULL.
 	 */
 
-	TkWindow *childPtr = TkpGetOtherWindow(winPtr);
+	TkWindow *childPtr = (TkWindow *)Tk_GetOtherWindow(tkwin);
 
 	if (childPtr != NULL) {
 	    childPtr->flags |= TK_DONT_DESTROY_WINDOW;
@@ -1793,7 +1793,7 @@ Tk_MakeWindowExist(
     if (createProc != NULL && parent != None) {
 	winPtr->window = createProc(tkwin, parent, winPtr->instanceData);
     } else {
-	winPtr->window = TkpMakeWindow(winPtr, parent);
+	winPtr->window = Tk_MakeWindow(tkwin, parent);
     }
 
     hPtr = Tcl_CreateHashEntry(&winPtr->dispPtr->winTable,
@@ -3248,7 +3248,7 @@ Initialize(
     }
 
     if (value) {
-	int objc;
+	TkSizeT objc;
 	Tcl_Obj **objv, **rest;
 	Tcl_Obj *parseList = Tcl_NewListObj(1, NULL);
 

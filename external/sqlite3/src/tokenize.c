@@ -657,7 +657,10 @@ int sqlite3RunParser(Parse *pParse, const char *zSql){
         tokenType = analyzeFilterKeyword((const u8*)&zSql[6], lastTokenParsed);
 #endif /* SQLITE_OMIT_WINDOWFUNC */
       }else{
-        sqlite3ErrorMsg(pParse, "unrecognized token: \"%.*s\"", n, zSql);
+        Token x;
+        x.z = zSql;
+        x.n = n;
+        sqlite3ErrorMsg(pParse, "unrecognized token: \"%T\"", &x);
         break;
       }
     }
@@ -707,7 +710,7 @@ int sqlite3RunParser(Parse *pParse, const char *zSql){
   if( pParse->pNewTrigger && !IN_RENAME_OBJECT ){
     sqlite3DeleteTrigger(db, pParse->pNewTrigger);
   }
-  sqlite3DbFree(db, pParse->pVList);
+  if( pParse->pVList ) sqlite3DbFreeNN(db, pParse->pVList);
   db->pParse = pParentParse;
   assert( nErr==0 || pParse->rc!=SQLITE_OK );
   return nErr;

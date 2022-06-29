@@ -37,6 +37,7 @@ function getbranch {
 function getsource {
     case $1 in
         "tcl") echo "https://core.tcl-lang.org/tcl";;
+        "tcltls") echo "https://core.tcl-lang.org/tcltls";;
         "tk") echo "https://core.tcl-lang.org/tk";;
         "thread") echo "https://core.tcl-lang.org/thread";;
         "bwidget") echo "https://core.tcl-lang.org/bwidget";;
@@ -101,7 +102,7 @@ done
 
 ## if no module provided use default
 if [ ${#MODULES[@]} -eq 0 ]; then
-    MODULES=(tclconfig tcl thread tk tcllib tklib tkimg tdbc tdbcodbc tdbcpostgres tdbcmysql tdbcsqlite3 sqlite3 bwidget vectcl photoresize tkcon tcludp tktable)
+    MODULES=(tclconfig tcl thread tk tcllib tklib tkimg tdbc tdbcodbc tdbcpostgres tdbcmysql tdbcsqlite3 sqlite3 bwidget vectcl photoresize tkcon tcludp tktable tcltls)
 fi
 
 ## go through all repos

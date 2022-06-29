@@ -5,7 +5,7 @@
 #   - Namespace initialization
 #   - Public utility procedures
 #
-# Copyright (c) 2000-2021  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
+# Copyright (c) 2000-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
 package require Tk 8
@@ -57,7 +57,7 @@ namespace eval mwutil {
 	    proc focus$dir {w class} $procBody
 	}
     }
-    makeFocusProcs 
+    makeFocusProcs
 
     #
     # Invoked in the procedures focusNext and focusPrev defined above:

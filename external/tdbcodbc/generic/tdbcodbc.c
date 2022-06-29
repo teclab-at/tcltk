@@ -37,6 +37,21 @@
 
 #include "fakesql.h"
 
+#ifndef JOIN
+#  define JOIN(a,b) JOIN1(a,b)
+#  define JOIN1(a,b) a##b
+#endif
+
+#ifndef TCL_UNUSED
+#   if defined(__cplusplus)
+#	define TCL_UNUSED(T) T
+#   elif defined(__GNUC__) && (__GNUC__ > 2)
+#	define TCL_UNUSED(T) T JOIN(dummy, __LINE__) __attribute__((unused))
+#   else
+#	define TCL_UNUSED(T) T JOIN(dummy, __LINE__)
+#   endif
+#endif
+
 /* Static data contained in this file */
 
 TCL_DECLARE_MUTEX(hEnvMutex);	/* Mutex protecting the environment handle
@@ -173,7 +188,7 @@ typedef struct StatementData {
 				/* The connection object */
     ConnectionData* cdata;	/* Data for the connection to which this
 				 * statement pertains. */
-    Tcl_Obj* subVars;	        /* List of variables to be substituted, in the
+    Tcl_Obj* subVars;		/* List of variables to be substituted, in the
 				 * order in which they appear in the
 				 * statement */
     SQLHSTMT hStmt;		/* Handle to the ODBC statement */
@@ -235,6 +250,10 @@ typedef struct StatementData {
 #define STATEMENT_FLAG_FOREIGNKEYS 0x40
 				/* This flag is set if the statement is
 				 * asking for primary key metadata */
+#define STATEMENT_FLAG_EVALDIRECT  0x80
+				/* This flag is set if the statement is
+				 * asking for direct execution (no prepare
+				 * or variable substitution) */
 
 /*
  * Structure describing the data types of substituted parameters in
@@ -391,7 +410,7 @@ static int GetResultSetDescription(Tcl_Interp* interp, ResultSetData* rdata);
 static int ConfigureConnection(Tcl_Interp* interp,
 			       SQLHDBC hDBC,
 			       PerInterpData* pidata,
-			       int objc, Tcl_Obj *const objv[],
+			       size_t objc, Tcl_Obj *const objv[],
 			       SQLUSMALLINT* connectFlagsPtr,
 			       HWND* hParentWindowPtr);
 static int ConnectionConstructor(void *clientData, Tcl_Interp* interp,
@@ -452,6 +471,10 @@ static int PrimarykeysStatementConstructor(void *clientData,
 					   Tcl_ObjectContext context,
 					   int objc, Tcl_Obj *const objv[]);
 static int ForeignkeysStatementConstructor(void *clientData,
+					   Tcl_Interp* interp,
+					   Tcl_ObjectContext context,
+					   int objc, Tcl_Obj *const objv[]);
+static int EvaldirectStatementConstructor(void *clientData,
 					   Tcl_Interp* interp,
 					   Tcl_ObjectContext context,
 					   int objc, Tcl_Obj *const objv[]);
@@ -583,7 +606,7 @@ static const Tcl_MethodType ConnectionHasWvarcharMethodType = {
  * 'rollback' are all special because they have non-NULL clientData.
  */
 
-static const Tcl_MethodType* ConnectionMethods[] = {
+static const Tcl_MethodType* const ConnectionMethods[] = {
     &ConnectionBeginTransactionMethodType,
     &ConnectionConfigureMethodType,
     &ConnectionHasBigintMethodType,
@@ -630,7 +653,7 @@ static const Tcl_MethodType StatementParamtypeMethodType = {
  * Methods to create on the statement class.
  */
 
-static const Tcl_MethodType* StatementMethods[] = {
+static const Tcl_MethodType* const StatementMethods[] = {
     &StatementConnectionMethodType,
     &StatementParamListMethodType,
     &StatementParamtypeMethodType,
@@ -697,6 +720,22 @@ static const Tcl_MethodType ForeignkeysStatementConstructorType = {
 };
 
 /*
+ * Method types for the class that implements the 'evaldirect' statement
+ * used to execute driver-native SQL code without preparing it or performing
+ * variable substitutions.
+ */
+
+static const Tcl_MethodType EvaldirectStatementConstructorType = {
+    TCL_OO_METHOD_VERSION_CURRENT,
+				/* version */
+    "CONSTRUCTOR",		/* name */
+    EvaldirectStatementConstructor,
+				/* callProc */
+    NULL,			/* deleteProc */
+    NULL			/* cloneProc */
+};
+
+/*
  * Constructor type for the class that implements the fake 'statement'
  * used to query the names and attributes of database types.
  */
@@ -753,7 +792,7 @@ static const Tcl_MethodType ResultSetRowcountMethodType = {
 };
 
 
-static const Tcl_MethodType* ResultSetMethods[] = {
+static const Tcl_MethodType* const ResultSetMethods[] = {
     &ResultSetColumnsMethodType,
     &ResultSetNextresultsMethodType,
     &ResultSetRowcountMethodType,
@@ -778,38 +817,31 @@ static const Tcl_MethodType* ResultSetMethods[] = {
  *-----------------------------------------------------------------------------
  */
 
+#ifndef TCL_COMBINE /* TIP #619 */
+#   define TCL_COMBINE 0
+#endif
+
 static void
 DStringAppendWChars(
     Tcl_DString* ds,		/* Output string */
     SQLWCHAR* ws,		/* Input string */
     size_t len			/* Length of the input string in characters */
 ) {
-    size_t i;
+    size_t i, bytes;
     char buf[4] = "";
 
     if (sizeofSQLWCHAR == sizeof(unsigned short)) {
 	unsigned short* ptr16 = (unsigned short*) ws;
 
 	for (i = 0; i < len; ++i) {
-	    unsigned int ch;
-	    size_t bytes;
-
-	    ch = ptr16[i];
-	    bytes = Tcl_UniCharToUtf(ch, buf);
+	    bytes = Tcl_UniCharToUtf(ptr16[i]|TCL_COMBINE, buf);
 	    Tcl_DStringAppend(ds, buf, bytes);
 	}
     } else {
-	unsigned int* ptr32 = (unsigned int*) ws;
+	int* ptr32 = (int*) ws;
 
 	for (i = 0; i < len; ++i) {
-	    unsigned int ch;
-	    size_t bytes;
-
-	    ch = ptr32[i];
-	    if (ch > 0x10ffff) {
-		ch = 0xfffd;
-	    }
-	    bytes = Tcl_UniCharToUtf(ch, buf);
+	    bytes = Tcl_UniCharToUtf(ptr32[i], buf);
 	    Tcl_DStringAppend(ds, buf, bytes);
 	}
     }
@@ -858,7 +890,7 @@ GetWCharStringFromObj(
 	unsigned short *ptr16 = (unsigned short*) wcPtr;
 
 	while (bytes < end) {
-	    unsigned int uch;
+	    int uch;
 
 	    if (Tcl_UtfCharComplete(bytes, end - bytes)) {
 		bytes += Tcl_UtfToUniChar(bytes, &ch);
@@ -879,10 +911,10 @@ GetWCharStringFromObj(
 	len = ptr16 - (unsigned short*) retval;
 	wcPtr = (SQLWCHAR*) ptr16;
     } else {
-	unsigned int *ptr32 = (unsigned int*) wcPtr;
+	int *ptr32 = (int*) wcPtr;
 
 	while (bytes < end) {
-	    unsigned int uch;
+	    int uch;
 
 	    if (Tcl_UtfCharComplete(bytes, end - bytes)) {
 		bytes += Tcl_UtfToUniChar(bytes, &ch);
@@ -905,7 +937,7 @@ GetWCharStringFromObj(
 	    *ptr32++ = uch;
 	}
 	*ptr32 = 0;
-	len = ptr32 - (unsigned int*) retval;
+	len = ptr32 - (int*) retval;
 	wcPtr = (SQLWCHAR*) ptr32;
     }
 
@@ -1050,9 +1082,16 @@ SQLStateIs(
     SQLSMALLINT stateLen;	/* String length of the state code */
     SQLSMALLINT i;		/* Loop index */
     SQLRETURN rc;		/* SQL result */
+    SQLINTEGER nRecs;		/* Number of diag records */
 
+    nRecs = -1;
+    SQLGetDiagFieldA(handleType, handle, 0, SQL_DIAG_NUMBER,
+	    (SQLPOINTER) &nRecs, 0, NULL);
+    if (nRecs < 0) {
+	nRecs = 1;
+    }
     i = 1;
-    while (1) {
+    while (i <= nRecs) {
 	state[0] = 0;
 	stateLen = 0,
 	rc = SQLGetDiagFieldA(handleType, handle, i, SQL_DIAG_SQLSTATE,
@@ -1063,6 +1102,7 @@ SQLStateIs(
 	if (stateLen >= 0 && !strcmp(sqlstate, (const char*) state)) {
 	    return 1;
 	}
+	i++;
     }
     return 0;
 }
@@ -1214,8 +1254,7 @@ GetHEnv(
 	    sizeofSQLWCHAR = sizeof(SQLWCHAR);		/* fallback */
 	    rc = SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDBC);
 	    if (SQL_SUCCEEDED(rc)) {
-		SQLSMALLINT infoLen;
-		int i;
+		SQLSMALLINT i, infoLen;
 		char info[64];
 
 		rc = SQLGetInfoW(hDBC, SQL_ODBC_VER, (SQLPOINTER) info,
@@ -1321,6 +1360,7 @@ AllocAndPrepareStatement(
 			| STATEMENT_FLAG_COLUMNS
 			| STATEMENT_FLAG_PRIMARYKEYS
 			| STATEMENT_FLAG_FOREIGNKEYS
+			| STATEMENT_FLAG_EVALDIRECT
 			| STATEMENT_FLAG_TYPES)) {
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("cannot have multiple result "
 						  "sets in this context", -1));
@@ -1546,7 +1586,7 @@ ConfigureConnection(
     Tcl_Interp* interp,		/* Tcl interpreter */
     SQLHDBC hDBC,		/* Handle to the connection */
     PerInterpData* pidata,	/* Package-global data */
-    int objc,			/* Option count */
+    size_t objc,			/* Option count */
     Tcl_Obj *const objv[],	/* Option vector */
     SQLUSMALLINT* connectFlagsPtr,
 				/* Pointer to the driver connection options */
@@ -1580,7 +1620,7 @@ ConfigureConnection(
     Tcl_Encoding sysEncoding;	/* The system encoding */
     Tcl_Encoding newEncoding;	/* The requested encoding */
     const char* encName;	/* The name of the system encoding */
-    int i;
+    size_t i;
     int j;
     SQLINTEGER mode;		/* Access mode of the database */
     SQLSMALLINT isol;		/* Isolation level */
@@ -2041,7 +2081,7 @@ ConnectionConstructor(
 
 static int
 ConnectionBeginTransactionMethod(
-    void *dummy,	/* Unused */
+    TCL_UNUSED(void *),		/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2051,7 +2091,6 @@ ConnectionBeginTransactionMethod(
 				/* The current connection object */
     ConnectionData* cdata = (ConnectionData*)
 	Tcl_ObjectGetMetadata(thisObject, &connectionDataType);
-    (void)dummy;
 
     /* Check parameters */
 
@@ -2109,7 +2148,7 @@ ConnectionBeginTransactionMethod(
 
 static int
 ConnectionConfigureMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),	/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2120,7 +2159,6 @@ ConnectionConfigureMethod(
     ConnectionData* cdata = (ConnectionData*)
 	Tcl_ObjectGetMetadata(thisObject, &connectionDataType);
 				/* Instance data */
-    (void)dummy;
 
     /* Check parameters */
 
@@ -2210,20 +2248,21 @@ ConnectionEndXcnMethod(
  *	64-bit ints.
  *
  * Usage:
- *	$connection HasBigint boolean
+ *	$connection HasBigint ?boolean?
  *
  * Parameters:
- *	boolean - 1 if the connection supports BIGINT, 0 otherwise
+ *	boolean - 1 if the connection supports BIGINT, 0 otherwise,
+ *		  if omitted, return current state
  *
  * Results:
- *	Returns an empty Tcl result.
+ *	Returns an empty Tcl result or boolean current state.
  *
  *-----------------------------------------------------------------------------
  */
 
 static int
 ConnectionHasBigintMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2235,12 +2274,16 @@ ConnectionHasBigintMethod(
 	Tcl_ObjectGetMetadata(thisObject, &connectionDataType);
 				/* Instance data */
     int flag;
-    (void)dummy;
 
     /* Check parameters */
 
+    if (objc == 2) {
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(
+		cdata->flags & CONNECTION_FLAG_HAS_BIGINT));
+	return TCL_OK;
+    }
     if (objc != 3) {
-	Tcl_WrongNumArgs(interp, 2, objv, "flag");
+	Tcl_WrongNumArgs(interp, 2, objv, "?flag?");
 	return TCL_ERROR;
     }
     if (Tcl_GetBooleanFromObj(interp, objv[2], &flag) != TCL_OK) {
@@ -2263,20 +2306,21 @@ ConnectionHasBigintMethod(
  *	WVARCHAR strings.
  *
  * Usage:
- *	$connection HasWvarchar boolean
+ *	$connection HasWvarchar ?boolean?
  *
  * Parameters:
  *	boolean - 1 if the connection supports WVARCHAR, 0 otherwise
+ *		  if omitted, return current state
  *
  * Results:
- *	Returns an empty Tcl result.
+ *	Returns an empty Tcl result or boolean current state.
  *
  *-----------------------------------------------------------------------------
  */
 
 static int
 ConnectionHasWvarcharMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext objectContext, /* Object context */
     int objc,			/* Parameter count */
@@ -2288,12 +2332,16 @@ ConnectionHasWvarcharMethod(
 	Tcl_ObjectGetMetadata(thisObject, &connectionDataType);
 				/* Instance data */
     int flag;
-    (void)dummy;
 
     /* Check parameters */
 
+    if (objc == 2) {
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(
+		cdata->flags & CONNECTION_FLAG_HAS_WVARCHAR));
+	return TCL_OK;
+    }
     if (objc != 3) {
-	Tcl_WrongNumArgs(interp, 2, objv, "flag");
+	Tcl_WrongNumArgs(interp, 2, objv, "?flag?");
 	return TCL_ERROR;
     }
     if (Tcl_GetBooleanFromObj(interp, objv[2], &flag) != TCL_OK) {
@@ -2381,12 +2429,9 @@ DeleteCmd (
 static int
 CloneCmd(
     Tcl_Interp* dummy,		/* Tcl interpreter */
-    void *oldClientData,	/* Environment handle to be discarded */
+    TCL_UNUSED(void *),		/* Environment handle to be discarded */
     void **newClientData	/* New environment handle to be used */
 ) {
-    (void)dummy;
-    (void)oldClientData;
-
     *newClientData = GetHEnv(NULL);
     return TCL_OK;
 }
@@ -2455,12 +2500,9 @@ DeleteConnection(
 static int
 CloneConnection(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    void *metadata,	/* Metadata to be cloned */
-    void **newMetaData	/* Where to put the cloned metadata */
+    TCL_UNUSED(void *),		/* Metadata to be cloned */
+    TCL_UNUSED(void **)		/* Where to put the cloned metadata */
 ) {
-    (void)metadata;
-    (void)newMetaData;
-
     Tcl_SetObjResult(interp,
 		     Tcl_NewStringObj("ODBC connections are not clonable", -1));
     return TCL_ERROR;
@@ -2527,7 +2569,7 @@ NewStatement(
 
 static int
 StatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2550,7 +2592,6 @@ StatementConstructor(
     RETCODE rc;			/* Return code from ODBC */
     SQLSMALLINT nParams;	/* Number of parameters in the ODBC statement */
     int i, j;
-    (void)dummy;
 
     /* Find the connection object, and get its data. */
 
@@ -2674,7 +2715,7 @@ StatementConstructor(
 	    if (SQL_SUCCEEDED(rc)) {
 		/*
 		 * FIXME: SQLDescribeParam doesn't actually describe
-		 *        the direction of parameter transmission for
+		 *	  the direction of parameter transmission for
 		 *	  stored procedure calls.  It appears simply
 		 *	  to be the caller's responsibility to know
 		 *	  these things.  If anyone has an idea how to
@@ -2733,11 +2774,11 @@ StatementConstructor(
 
 static int
 StatementConnectionMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
-    int objc, 			/* Parameter count */
-    Tcl_Obj *const objv[]	/* Parameter vector */
+    TCL_UNUSED(int), 			/* Parameter count */
+    TCL_UNUSED(Tcl_Obj *const *)/* Parameter vector */
 ) {
     Tcl_Object thisObject = Tcl_ObjectContextObject(context);
 				/* The current statement object */
@@ -2748,9 +2789,6 @@ StatementConnectionMethod(
 				/* The command representing the object */
     Tcl_Obj* retval = Tcl_NewObj();
 				/* The command name */
-    (void)dummy;
-    (void)objc;
-    (void)objv;
 
     sdata = (StatementData*) Tcl_ObjectGetMetadata(thisObject,
 						   &statementDataType);
@@ -2780,22 +2818,19 @@ StatementConnectionMethod(
 
 static int
 StatementParamListMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
-    int objc, 			/* Parameter count */
-    Tcl_Obj *const objv[]	/* Parameter vector */
+    TCL_UNUSED(int), 			/* Parameter count */
+    TCL_UNUSED(Tcl_Obj *const *)	/* Parameter vector */
 ) {
     Tcl_Object thisObject = Tcl_ObjectContextObject(context);
 				/* The current statement object */
     StatementData* sdata;	/* The current statement */
     Tcl_Obj **paramNames;	/* Parameter list to the current statement */
-    int nParams;		/* Parameter count for the current statement */
-    int i;			/* Current parameter index */
+    int nParams;	/* Parameter count for the current statement */
+    int i;		/* Current parameter index */
     Tcl_Obj* retval;		/* Return value from this command */
-    (void)dummy;
-    (void)objc;
-    (void)objv;
 
     sdata = (StatementData*) Tcl_ObjectGetMetadata(thisObject,
 						   &statementDataType);
@@ -2839,7 +2874,7 @@ StatementParamListMethod(
 
 static int
 StatementParamtypeMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2863,7 +2898,6 @@ StatementParamtypeMethod(
 				/* ODBC type of the parameter */
     int precision = 0;		/* Length of the parameter */
     int scale = 0;		/* Precision of the parameter */
-    (void)dummy;
 
     sdata = (StatementData*) Tcl_ObjectGetMetadata(thisObject,
 						   &statementDataType);
@@ -2969,7 +3003,7 @@ StatementParamtypeMethod(
 
 static int
 TablesStatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -2985,7 +3019,6 @@ TablesStatementConstructor(
     ConnectionData* cdata;	/* The connection object's data */
     StatementData* sdata;	/* The statement's object data */
     RETCODE rc;			/* Return code from ODBC */
-    (void)dummy;
 
     /* Find the connection object, and get its data. */
 
@@ -3070,7 +3103,7 @@ TablesStatementConstructor(
 
 static int
 ColumnsStatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3086,7 +3119,6 @@ ColumnsStatementConstructor(
     ConnectionData* cdata;	/* The connection object's data */
     StatementData* sdata;	/* The statement's object data */
     RETCODE rc;			/* Return code from ODBC */
-    (void)dummy;
 
 
     /* Check param count */
@@ -3174,7 +3206,7 @@ ColumnsStatementConstructor(
 
 static int
 PrimarykeysStatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3190,7 +3222,6 @@ PrimarykeysStatementConstructor(
     ConnectionData* cdata;	/* The connection object's data */
     StatementData* sdata;	/* The statement's object data */
     RETCODE rc;			/* Return code from ODBC */
-    (void)dummy;
 
 
     /* Check param count */
@@ -3277,7 +3308,7 @@ PrimarykeysStatementConstructor(
 
 static int
 ForeignkeysStatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3304,14 +3335,13 @@ ForeignkeysStatementConstructor(
 	OPT__END
     };
 
-    int i;
+    size_t i;
     int paramIdx;		/* Index of the current option in the option
 				 * table */
     unsigned char have[OPT__END];
 				/* Flags for whether given -keywords have been
 				 * seen. */
     Tcl_Obj* resultObj;		/* Interpreter result */
-    (void)dummy;
 
     /* Check param count */
 
@@ -3396,6 +3426,115 @@ ForeignkeysStatementConstructor(
 /*
  *-----------------------------------------------------------------------------
  *
+ * EvaldirectStatementConstructor --
+ *
+ *	C-level initialization for the object representing a a driver-native
+ *	ODBC query that is not tokenized or prepared.
+ *
+ * Parameters:
+ *	Accepts a 4-element 'objv':
+ *		columnsStatement new $connection $sqlStatement,
+ *	where $connection is the ODBC connection object and $sqlStatement is
+ *	the driver-native SQL to be executed.
+ *
+ * Results:
+ *	Returns a standard Tcl result
+ *
+ * Side effects:
+ *	Creates an ODBC statement, and stores it (plus a copy of the
+ *	driver-native sqlStatement a reference to the connection) in
+ *	instance metadata.
+ *
+ *-----------------------------------------------------------------------------
+ */
+
+static int
+EvaldirectStatementConstructor(
+    void *clientData,	/* Not used */
+    Tcl_Interp* interp,		/* Tcl interpreter */
+    Tcl_ObjectContext context,	/* Object context  */
+    int objc, 			/* Parameter count */
+    Tcl_Obj *const objv[]	/* Parameter vector */
+) {
+
+    Tcl_Object thisObject = Tcl_ObjectContextObject(context);
+				/* The current statement object */
+    int skip = Tcl_ObjectContextSkippedArgs(context);
+				/* The number of parameters to skip */
+    Tcl_Object connectionObject;
+				/* The database connection as a Tcl_Object */
+    ConnectionData* cdata;	/* The connection object's data */
+    StatementData* sdata;	/* The statement's object data */
+    RETCODE rc;			/* Return code from ODBC */
+
+
+    /* Check param count */
+
+    if (objc != skip+2) {
+	Tcl_WrongNumArgs(interp, skip, objv, "connection sqlStatement");
+	return TCL_ERROR;
+    }
+
+    /* Do not initialize superclasses; this constructor overrides
+     * StatementConstructor so that the SQL is not tokenizer or prepared. */
+
+    /* Find the connection object, and get its data. */
+
+    connectionObject = Tcl_GetObjectFromObj(interp, objv[skip]);
+    if (connectionObject == NULL) {
+	return TCL_ERROR;
+    }
+    cdata = (ConnectionData*) Tcl_ObjectGetMetadata(connectionObject,
+						    &connectionDataType);
+    if (cdata == NULL) {
+	Tcl_AppendResult(interp, Tcl_GetString(objv[skip]),
+			 " does not refer to an ODBC connection", NULL);
+	return TCL_ERROR;
+    }
+
+    /*
+     * Allocate an object to hold data about this statement
+     */
+
+    sdata = NewStatement(cdata, connectionObject);
+
+    /* Allocate an ODBC statement handle */
+
+    rc = SQLAllocHandle(SQL_HANDLE_STMT, cdata->hDBC, &(sdata->hStmt));
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+	TransferSQLError(interp, SQL_HANDLE_DBC, cdata->hDBC,
+			 "(allocating statement handle)");
+	goto freeSData;
+    }
+
+    /*
+     * Stash the sqlStatement and set a flag to indicate direct execution.
+     */
+
+    sdata->nativeSqlW = GetWCharStringFromObj(objv[skip+1],
+					      &(sdata->nativeSqlLen));
+    sdata->flags = STATEMENT_FLAG_EVALDIRECT;
+
+    /* Attach the current statement data as metadata to the current object */
+
+    Tcl_ObjectSetMetadata(thisObject, &statementDataType, (void *) sdata);
+
+    /* Statement will be executed when the statement object's resultSetCreate
+     * is called (e.g. via $statement allrows).  In this statement
+     * resultSetCreate forwards to ResultSetConstructor. */
+
+    return TCL_OK;
+
+    /* On error, unwind all the resource allocations */
+
+ freeSData:
+    DecrStatementRefCount(sdata);
+    return TCL_ERROR;
+}
+
+/*
+ *-----------------------------------------------------------------------------
+ *
  * TypesStatementConstructor --
  *
  *	C-level initialization for the object representing an ODBC query
@@ -3419,7 +3558,7 @@ ForeignkeysStatementConstructor(
 
 static int
 TypesStatementConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3436,7 +3575,6 @@ TypesStatementConstructor(
     StatementData* sdata;	/* The statement's object data */
     RETCODE rc;			/* Return code from ODBC */
     int typeNum;		/* Data type number */
-    (void)dummy;
 
     /* Parse args */
 
@@ -3563,12 +3701,9 @@ DeleteStatement(
 static int
 CloneStatement(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    void *metadata,	/* Metadata to be cloned */
-    void **newMetaData	/* Where to put the cloned metadata */
+    TCL_UNUSED(void *),		/* Metadata to be cloned */
+    TCL_UNUSED(void **)		/* Where to put the cloned metadata */
 ) {
-    (void)metadata;
-    (void)newMetaData;
-
     Tcl_SetObjResult(interp,
 		     Tcl_NewStringObj("ODBC statements are not clonable", -1));
     return TCL_ERROR;
@@ -3599,7 +3734,7 @@ CloneStatement(
 
 static int
 ResultSetConstructor(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3633,7 +3768,6 @@ ResultSetConstructor(
     unsigned char* byteArrayPtr; /* Pointer to a BINARY or VARBINARY
 				 * parameter, expressed as a byte array.*/
     int i;
-    (void)dummy;
 
     /* Check parameter count */
 
@@ -3875,7 +4009,7 @@ ResultSetConstructor(
 		    paramVal = Tcl_GetString(paramValObj);
 		    paramLen = paramValObj->length;
 		    Tcl_DStringInit(&paramExternal);
-		    Tcl_UtfToExternalDString(NULL, paramVal, paramLen,
+		    (void)Tcl_UtfToExternalDString(NULL, paramVal, paramLen,
 					     &paramExternal);
 		    paramExternalLen = Tcl_DStringLength(&paramExternal);
 		    rdata->bindStrings[nBound] = (SQLCHAR*)
@@ -3937,6 +4071,9 @@ ResultSetConstructor(
 			     NULL, 0, NULL, 0,
 			     sdata->nativeMatchPatternW,
 			     sdata->nativeMatchPatLen);
+    } else if (sdata->flags & STATEMENT_FLAG_EVALDIRECT) {
+	rc = SQLExecDirectW(rdata->hStmt, sdata->nativeSqlW,
+			    sdata->nativeSqlLen);
     } else {
 	rc = SQLExecute(rdata->hStmt);
     }
@@ -3989,7 +4126,7 @@ ResultSetConstructor(
 
 static int
 ResultSetColumnsMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -3999,7 +4136,6 @@ ResultSetColumnsMethod(
 				/* The current result set object */
     ResultSetData* rdata = (ResultSetData*)
 	Tcl_ObjectGetMetadata(thisObject, &resultSetDataType);
-    (void)dummy;
 
     if (objc != 2) {
 	Tcl_WrongNumArgs(interp, 2, objv, "");
@@ -4043,11 +4179,11 @@ ResultSetColumnsMethod(
 
 static int
 ResultSetNextresultsMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
-    int objc, 			/* Parameter count */
-    Tcl_Obj *const objv[]	/* Parameter vector */
+    TCL_UNUSED(int), 			/* Parameter count */
+    TCL_UNUSED(Tcl_Obj *const *)	/* Parameter vector */
 ) {
     Tcl_Object thisObject = Tcl_ObjectContextObject(context);
 				/* The current result set object */
@@ -4063,9 +4199,6 @@ ResultSetNextresultsMethod(
     Tcl_Obj** literals = pidata->literals;
 				/* Literal pool */
     SQLRETURN rc;		/* Return code from ODBC operations */
-    (void)dummy;
-    (void)objc;
-    (void)objv;
 
     /*
      * Once we are advancing the results, any data that we think we know
@@ -4279,7 +4412,10 @@ GetCell(
 				/* Current allocated size of the buffer,
 				 * in bytes */
     SQLLEN colLen;		/* Actual size of the return value, in bytes */
-    SQLINTEGER colLong;		/* Integer value of the column */
+    union {			/* Integer value of the column */
+	SQLINTEGER si;		/*   this holds a 'long' */
+	int i;			/*   but some drivers return 'int' */
+    } colLong;
     SQLBIGINT colWide;		/* Wide-integer value of the column */
     SQLDOUBLE colDouble;	/* Double value of the column */
     Tcl_DString colDS;		/* Column expressed as a Tcl_DString */
@@ -4346,9 +4482,9 @@ GetCell(
     case SQL_TINYINT:
     convertLong:
 	/* An integer no larger than 'long' */
-	colLen = sizeof(colLong); colLong = 0;
+	colLen = sizeof(colLong.si); colLong.si = 0;
 	rc = SQLGetData(rdata->hStmt, i+1, SQL_C_SLONG,
-			(SQLPOINTER) &colLong, sizeof(colLong), &colLen);
+			(SQLPOINTER) &colLong.si, sizeof(colLong.si), &colLen);
 	if (!SQL_SUCCEEDED(rc)) {
 	    char info[80];
 	    sprintf(info, "(retrieving result set column #%d)\n", i+1);
@@ -4357,7 +4493,11 @@ GetCell(
 	    return TCL_ERROR;
 	}
 	if (colLen != SQL_NULL_DATA && colLen != SQL_NO_TOTAL) {
-	    colObj = Tcl_NewWideIntObj(colLong);
+	    if (colLen != sizeof(colLong.si)) {
+		colObj = Tcl_NewWideIntObj(colLong.i);
+	    } else {
+		colObj = Tcl_NewWideIntObj(colLong.si);
+	    }
 	}
 	break;
 
@@ -4488,16 +4628,14 @@ GetCell(
 	    Tcl_DStringInit(&colDS);
 	    if (dataType == SQL_C_BINARY) {
 		colObj = Tcl_NewByteArrayObj((const unsigned char*) colPtr,
-					     (int) (colLen + offset));
+					     colLen + offset);
 	    } else {
 		if (dataType == SQL_C_CHAR) {
-		    Tcl_ExternalToUtfDString(NULL, (char*) colPtr,
-					     (int) (colLen + offset),
-					     &colDS);
+		    (void)Tcl_ExternalToUtfDString(NULL, (char*) colPtr,
+					     colLen + offset, &colDS);
 		} else {
 		    DStringAppendWChars(&colDS, (SQLWCHAR*) colPtr,
-					(int)((colLen + offset)
-					      / sizeofSQLWCHAR));
+					(colLen + offset)/ sizeofSQLWCHAR);
 		}
 		colObj = Tcl_NewStringObj(Tcl_DStringValue(&colDS),
 					  Tcl_DStringLength(&colDS));
@@ -4533,7 +4671,7 @@ GetCell(
 
 static int
 ResultSetRowcountMethod(
-    void *dummy,	/* Not used */
+    TCL_UNUSED(void *),		/* Not used */
     Tcl_Interp* interp,		/* Tcl interpreter */
     Tcl_ObjectContext context,	/* Object context  */
     int objc, 			/* Parameter count */
@@ -4544,7 +4682,6 @@ ResultSetRowcountMethod(
     ResultSetData* rdata = (ResultSetData*)
 	Tcl_ObjectGetMetadata(thisObject, &resultSetDataType);
 				/* Data pertaining to the current result set */
-    (void)dummy;
 
     if (objc != 2) {
 	Tcl_WrongNumArgs(interp, 2, objv, "");
@@ -4626,12 +4763,9 @@ DeleteResultSetDescription(
 static int
 CloneResultSet(
     Tcl_Interp* interp,		/* Tcl interpreter for error reporting */
-    void *metadata,	/* Metadata to be cloned */
-    void **newMetaData	/* Where to put the cloned metadata */
+    TCL_UNUSED(void *),		/* Metadata to be cloned */
+    TCL_UNUSED(void **)		/* Where to put the cloned metadata */
 ) {
-    (void)metadata;
-    (void)newMetaData;
-
     Tcl_SetObjResult(interp,
 		     Tcl_NewStringObj("ODBC result sets are not clonable", -1));
     return TCL_ERROR;
@@ -4860,7 +4994,7 @@ DriversObjCmd(
     int finished;		/* Flag == 1 if a complete list of drivers
 				 * has been constructed */
     int status = TCL_OK;	/* Status return from this call */
-    int i, j;
+    size_t i, j;
 
     /* Get the argument */
 
@@ -5003,7 +5137,7 @@ DriversObjCmd(
 
 static int
 DatasourceObjCmdW(
-    void *dummy,	/* Unused */
+    TCL_UNUSED(void *),	/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
     Tcl_Obj *const objv[]	/* Parameter vector */
@@ -5040,7 +5174,6 @@ DatasourceObjCmdW(
     BOOL ok;
     int status = TCL_OK;
     int finished = 0;
-    (void)dummy;
 
     /* Check args */
 
@@ -5103,7 +5236,7 @@ DatasourceObjCmdW(
 	    case SQL_SUCCESS:
 		Tcl_DStringAppend(&retvalDS, sep, -1);
 		Tcl_DStringInit(&errorMessageDS);
-		Tcl_ExternalToUtfDString(NULL, errorMessage, errorMessageLen,
+		(void)	Tcl_ExternalToUtfDString(NULL, errorMessage, errorMessageLen,
 					 &errorMessageDS);
 		Tcl_DStringAppend(&retvalDS,
 				  Tcl_DStringValue(&errorMessageDS),
@@ -5182,7 +5315,7 @@ DatasourceObjCmdW(
 
 static int
 DatasourceObjCmdA(
-    void *dummy,	/* Unused */
+    TCL_UNUSED(void *),		/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
     Tcl_Obj *const objv[]	/* Parameter vector */
@@ -5223,7 +5356,6 @@ DatasourceObjCmdA(
     BOOL ok;
     int status = TCL_OK;
     int finished = 0;
-    (void)dummy;
 
     /* Check args */
 
@@ -5242,7 +5374,7 @@ DatasourceObjCmdA(
     Tcl_DStringInit(&driverNameDS);
     p = Tcl_GetString(objv[2]);
     driverNameLen = objv[2]->length;
-    Tcl_UtfToExternalDString(NULL, p, driverNameLen, &driverNameDS);
+    (void)Tcl_UtfToExternalDString(NULL, p, driverNameLen, &driverNameDS);
     driverName = Tcl_DStringValue(&driverNameDS);
     driverNameLen = Tcl_DStringLength(&driverNameDS);
 
@@ -5263,7 +5395,7 @@ DatasourceObjCmdA(
     Tcl_DStringInit(&attributesDS);
     p = Tcl_GetString(attrObj);
     attrLen = attrObj->length;
-    Tcl_UtfToExternalDString(NULL, p, attrLen, &attributesDS);
+    (void)Tcl_UtfToExternalDString(NULL, p, attrLen, &attributesDS);
     attributes = Tcl_DStringValue(&attributesDS);
     attrLen = Tcl_DStringLength(&attributesDS);
     Tcl_DecrRefCount(attrObj);
@@ -5296,7 +5428,7 @@ DatasourceObjCmdA(
 	    case SQL_SUCCESS:
 		Tcl_DStringAppend(&retvalDS, sep, -1);
 		Tcl_DStringInit(&errorMessageDS);
-		Tcl_ExternalToUtfDString(NULL, errorMessage, errorMessageLen,
+		(void)Tcl_ExternalToUtfDString(NULL, errorMessage, errorMessageLen,
 					 &errorMessageDS);
 		Tcl_DStringAppend(&retvalDS,
 				  Tcl_DStringValue(&errorMessageDS),
@@ -5498,19 +5630,19 @@ Tdbcodbc_Init(
     Tcl_ClassSetConstructor(interp, curClass,
 			    Tcl_NewMethod(interp, curClass, NULL, 0,
 					  &ConnectionConstructorType,
-					  (ClientData) pidata));
+					  (void *) pidata));
 
     /* Attach the other methods to the connection class */
 
     nameObj = Tcl_NewStringObj("commit", -1);
     Tcl_IncrRefCount(nameObj);
     Tcl_NewMethod(interp, curClass, nameObj, 1,
-		       &ConnectionEndXcnMethodType, (ClientData) SQL_COMMIT);
+		       &ConnectionEndXcnMethodType, (void *) SQL_COMMIT);
     Tcl_DecrRefCount(nameObj);
     nameObj = Tcl_NewStringObj("rollback", -1);
     Tcl_IncrRefCount(nameObj);
     Tcl_NewMethod(interp, curClass, nameObj, 1,
-		       &ConnectionEndXcnMethodType, (ClientData) SQL_ROLLBACK);
+		       &ConnectionEndXcnMethodType, (void *) SQL_ROLLBACK);
     Tcl_DecrRefCount(nameObj);
     for (i = 0; ConnectionMethods[i] != NULL; ++i) {
 	nameObj = Tcl_NewStringObj(ConnectionMethods[i]->name, -1);
@@ -5602,17 +5734,6 @@ Tdbcodbc_Init(
 					  &PrimarykeysStatementConstructorType,
 					  NULL));
 
-    /* Look up the 'typesStatement' class */
-
-    nameObj = Tcl_NewStringObj("::tdbc::odbc::typesStatement", -1);
-    Tcl_IncrRefCount(nameObj);
-    if ((curClassObject = Tcl_GetObjectFromObj(interp, nameObj)) == NULL) {
-	Tcl_DecrRefCount(nameObj);
-	return TCL_ERROR;
-    }
-    Tcl_DecrRefCount(nameObj);
-    curClass = Tcl_GetObjectAsClass(curClassObject);
-
     /* Look up the 'foreignkeysStatement' class */
 
     nameObj = Tcl_NewStringObj("::tdbc::odbc::foreignkeysStatement", -1);
@@ -5630,6 +5751,24 @@ Tdbcodbc_Init(
 			    Tcl_NewMethod(interp, curClass, NULL, 1,
 					  &ForeignkeysStatementConstructorType,
 					  NULL));
+
+    /* Look up the 'evaldirectStatement' class */
+
+    nameObj = Tcl_NewStringObj("::tdbc::odbc::evaldirectStatement", -1);
+    Tcl_IncrRefCount(nameObj);
+    if ((curClassObject = Tcl_GetObjectFromObj(interp, nameObj)) == NULL) {
+	Tcl_DecrRefCount(nameObj);
+	return TCL_ERROR;
+    }
+    Tcl_DecrRefCount(nameObj);
+    curClass = Tcl_GetObjectAsClass(curClassObject);
+
+    /* Attach the constructor to the 'evaldirectStatement' class */
+
+    Tcl_ClassSetConstructor(interp, curClass,
+			    Tcl_NewMethod(interp, curClass, NULL, 1,
+					  &EvaldirectStatementConstructorType,
+					  (void *) NULL));
 
     /* Look up the 'typesStatement' class */
 

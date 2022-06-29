@@ -74,7 +74,7 @@ Tdbc_TokenizeSql(
     const char* zSql)
 {
     Tcl_Obj *resultPtr;
-    int i;
+    size_t i;
 
     resultPtr = Tcl_NewObj();
     for(i = 0; zSql[i]; i++){
@@ -188,13 +188,12 @@ Tdbc_TokenizeSql(
 
 MODULE_SCOPE int
 TdbcTokenizeObjCmd(
-    void *dummy,	/* Unused */
+    TCL_UNUSED(void *),	/* Unused */
     Tcl_Interp* interp,		/* Tcl interpreter */
     int objc,			/* Parameter count */
     Tcl_Obj *const objv[])	/* Parameter vector */
 {
     Tcl_Obj* retval;
-    (void)dummy;
 
     /* Check param count */
 

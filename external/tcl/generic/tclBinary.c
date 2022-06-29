@@ -434,7 +434,7 @@ TclGetBytesFromObj(
 
 		irPtr = TclFetchInternalRep(objPtr, &tclByteArrayType);
 		baPtr = GET_BYTEARRAY(irPtr);
-		nonbyte = Tcl_UtfAtIndex(Tcl_GetString(objPtr), baPtr->bad);
+		nonbyte = TclUtfAtIndex(Tcl_GetString(objPtr), baPtr->bad);
 		TclUtfToUCS4(nonbyte, &ucs4);
 
 		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
@@ -473,7 +473,7 @@ Tcl_GetBytesFromObj(
 
 		irPtr = TclFetchInternalRep(objPtr, &tclByteArrayType);
 		baPtr = GET_BYTEARRAY(irPtr);
-		nonbyte = Tcl_UtfAtIndex(Tcl_GetString(objPtr), baPtr->bad);
+		nonbyte = TclUtfAtIndex(Tcl_GetString(objPtr), baPtr->bad);
 		TclUtfToUCS4(nonbyte, &ucs4);
 
 		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
@@ -1129,7 +1129,7 @@ BinaryFormatCmd(
 		 * The macro evals its args more than once: avoid arg++
 		 */
 
-		if (TclListObjGetElements(interp, objv[arg], &listc,
+		if (TclListObjGetElementsM(interp, objv[arg], &listc,
 			&listv) != TCL_OK) {
 		    return TCL_ERROR;
 		}
@@ -1411,7 +1411,7 @@ BinaryFormatCmd(
 		listc = 1;
 		count = 1;
 	    } else {
-		TclListObjGetElements(interp, objv[arg], &listc, &listv);
+		TclListObjGetElementsM(interp, objv[arg], &listc, &listv);
 		if (count == BINARY_ALL) {
 		    count = listc;
 		}
@@ -2383,12 +2383,12 @@ ScanNumber(
 	    value = (long) (buffer[0]
 		    + (buffer[1] << 8)
 		    + (buffer[2] << 16)
-		    + (((long)buffer[3]) << 24));
+		    + (((unsigned long)buffer[3]) << 24));
 	} else {
 	    value = (long) (buffer[3]
 		    + (buffer[2] << 8)
 		    + (buffer[1] << 16)
-		    + (((long) buffer[0]) << 24));
+		    + (((unsigned long) buffer[0]) << 24));
 	}
 
 	/*

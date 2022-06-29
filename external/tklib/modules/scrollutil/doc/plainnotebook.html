@@ -13,7 +13,7 @@
   <div align="center">
     <h1>The <code><b>scrollutil::plainnotebook</b></code> Command</h1>
 
-    <h2>For Scrollutil Version 1.13</h2>
+    <h2>For Scrollutil Version 1.15</h2>
 
     <h3>by</h3>
 
@@ -169,6 +169,9 @@ package require scrollutil_tile
 
     <dd><code><i>pathName</i> <b><a href="#tabs">tabs</a></b></code></dd>
 
+    <dd><code><i>pathName</i> <b><a href=
+    "#titlepath">titlepath</a></b></code></dd>
+
     <dt class="tm"><a href="#kbd_traversal">KEYBOARD TRAVERSAL</a></dt>
 
     <dt class="tm"><a href="#virtual_events">VIRTUAL EVENTS</a></dt>
@@ -226,15 +229,16 @@ package require scrollutil_tile
     "scrollableframe.html">scrollableframe</a> whose content frame is the
     parent of a series of widgets that play the role of vertically laid-out
     notebook tabs.&nbsp; Currently not visible "tabs" can be brought into view
-    by scrolling with the mouse wheel or the vertical scrollbar of the <a href=
-    "scrollarea.html">scrollarea</a> containing the scrollableframe.&nbsp; An
-    individual "tab" can be made visible programmatically with the aid of the
-    <code><b><a href="#see">see</a></b></code> subcommand.&nbsp; Unlike a
-    ttk::notebook widget with vertically aligned tabs, which in most themes has
-    a suboptimal look and whose <code><b>-height</b></code> option is quite
-    often overriden by the total height of the tabs, the plainnotebook widget
-    respects the value of its <code><b><a href="#height">-height</a></b></code>
-    option, regardless of the space required by the "tabs".</dd>
+    by navigating with the mouse wheel or keyboard and by scrolling with the
+    vertical scrollbar of the <a href="scrollarea.html">scrollarea</a>
+    containing the scrollableframe.&nbsp; An individual "tab" can be made
+    visible programmatically with the aid of the <code><b><a href=
+    "#see">see</a></b></code> subcommand.&nbsp; Unlike a ttk::notebook widget
+    with vertically aligned tabs, which in most themes has a suboptimal look
+    and whose <code><b>-height</b></code> option is quite often overridden by
+    the total height of the tabs, the plainnotebook widget respects the value
+    of its <code><b><a href="#height">-height</a></b></code> option, regardless
+    of the space required by the "tabs".</dd>
 
     <dd class="tm">In the rest of this document, the widgets that play the role
     of vertically laid-out notebook tabs, will be called <b>tabs</b>
@@ -305,7 +309,7 @@ package require scrollutil_tile
 
       <blockquote>
         <p>The value of this option must be an integer.&nbsp; If it is
-        non-negative then the widget's parent must be a <a href=
+        nonnegative then the widget's parent must be a <a href=
         "pagesman.html">pagesman</a> widget.&nbsp; In this case the value is
         viewed as the numerical index of an already existing page of the parent
         pagesman widget, and the plainnotebook's ascend button will select that
@@ -519,7 +523,7 @@ package require scrollutil_tile
         focus during keyboard traversal.&nbsp; It is almost identical to the
         standard option of the same name (see the <b>options</b> manual entry
         for details).&nbsp; The only difference is that not the plainnotebook
-        widget itself but the ttk::notebook contained in it will receive the
+        widget itself but the scrollableframe contained in it will receive the
         focus during keyboard traversal with the standard keys
         (<code>Tab</code> and <code>Shift-Tab</code>).&nbsp; The default is
         <code>"ttk::takefocus"</code> (just like for ttk::notebook and several
@@ -547,9 +551,14 @@ package require scrollutil_tile
 
       <blockquote>
         <p>Specifies the text to be displayed in the plainnotebook's title
-        label.&nbsp; The font used for this ttk::label widget is derived from
-        <code><b>TkDefaultFont</b></code> by increasing the latter's size by
-        two points.</p>
+        label, which is a ttk::label widget of the style
+        <code>PnbTitle.TLabel</code>.&nbsp; The font used for this style is
+        derived from <code><b>TkDefaultFont</b></code> by increasing the
+        latter's size by a factor of 1.2.&nbsp; To set a different font, use
+        the <code><b>ttk::style</b></code> command or retrieve the path name
+        of this widget with the <code><b><a href=
+        "#titlepath">titlepath</a></b></code> subcommand and then invoke&nbsp;
+        <code>... <b>configure -font</b> ...</code>.</p>
       </blockquote>
     </dd>
 
@@ -628,24 +637,29 @@ package require scrollutil_tile
         "#insertseparator">insertseparator</a></b></code> subcommands.&nbsp; If
         <code><i>window</i></code> is not yet managed by the notebook then the
         corresponding tab will be a ttk::radiobutton widget of a toolbutton
-        style.</dd>
+        style (<code>Page.Toolbutton</code> or
+        <code>ClosablePage.Toolbutton</code>, depending on the value of the
+        <code><b><a href="#closabletabs">-closabletabs</a></b></code>
+        option).</dd>
 
         <dt class="tm" id="addbutton"><code><i>pathName</i> <b>addbutton</b>
         <i>pageIndex</i> <i>text</i> ?<i>image</i>?</code></dt>
 
         <dd>Adds a new tab implemented as a ttk::button widget of a toolbutton
-        style that displays, besides the specified <code><i>text</i></code> and
-        optional <code><i>image</i></code>, the <code><b>descend</b></code>
-        element, whose shape resembles that of a &gt; character.&nbsp; This
-        style element is automatically created by the Scrollutil_tile
-        package.&nbsp; Its size depends on the display's scaling percentage
-        (<code>100</code>, <code>125</code>, <code>150</code>,
-        <code>175</code>, or <code>200</code>), while its foreground color is
-        theme-specific and is updated whenever the theme changes.</dd>
+        style (<code>Desc.Toolbutton</code>) that displays, besides the
+        specified <code><i>text</i></code> and optional
+        <code><i>image</i></code>, the <code><b>descend</b></code> element,
+        whose shape resembles that of a &gt; character.&nbsp; This style
+        element is automatically created by the Scrollutil_tile package.&nbsp;
+        Its size depends on the display's scaling percentage (<code>100</code>,
+        <code>125</code>, <code>150</code>, <code>175</code>, or
+        <code>200</code>), while its foreground color is theme-specific and is
+        updated whenever the theme changes.&nbsp; The return value is the path
+        name of the above-mentioned ttk::button widget.</dd>
 
         <dd class="tm">For this subcommand to work, the widget's parent must be
         a <a href="pagesman.html">pagesman</a> widget.&nbsp;
-        <code><i>pageIndex</i></code>, which must be a non-negative integer,
+        <code><i>pageIndex</i></code>, which must be a nonnegative integer,
         specifies the numerical index of a page within the pagesman widget that
         will be selected when invoking the toolbutton.&nbsp; It is not expected
         that at the time this subcommand is invoked, the page identified by
@@ -667,18 +681,24 @@ package require scrollutil_tile
         <dt class="tm" id="addlabel"><code><i>pathName</i> <b>addlabel</b>
         <i>text</i> ?<i>image</i>?</code></dt>
 
-        <dd>Adds a new tab implemented as a ttk::label widget that displays the
-        specified <code><i>text</i></code> and optional
-        <code><i>image</i></code>, and is typically used as a title of a group
-        of tabs.&nbsp; The font used for the ttk::label is derived from
-        <code><b>TkDefaultFont</b></code> by increasing the latter's size by
-        two points.</dd>
+        <dd>Adds a new tab implemented as a ttk::label widget of the style
+        <code>PnbLabel.TLabel</code> that displays the specified
+        <code><i>text</i></code> and optional <code><i>image</i></code>, and is
+        typically used as a title of a group of tabs.&nbsp; The font used for
+        this style is derived from <code><b>TkDefaultFont</b></code> by
+        increasing the latter's size by a factor of 1.2 and can be changed with
+        the <code><b>ttk::style</b></code> command.&nbsp; The return value
+        is the path name of the above-mentioned ttk::label widget; you can use
+        it, e.g., to override the style's font for this particular label
+        via&nbsp; <code>... <b>configure -font</b> ...</code>.</dd>
 
         <dt class="tm" id="addseparator"><code><i>pathName</i>
         <b>addseparator</b></code></dt>
 
         <dd>Adds a new tab implemented as a horizontal ttk::separator widget,
-        which is typically used as a delimiter of a group of tabs.</dd>
+        which is typically used as a delimiter of a group of tabs.&nbsp; The
+        return value is the path name of the above-mentioned ttk::separator
+        widget.</dd>
 
         <dt class="tm" id="cget"><code><i>pathName</i> <b>cget</b>
         <i>option</i></code></dt>
@@ -747,27 +767,35 @@ package require scrollutil_tile
         "#addseparator">addseparator</a></b></code>, <code><b><a href=
         "#insertbutton">insertbutton</a></b></code>, <code><b><a href=
         "#insertlabel">insertlabel</a></b></code>, and <code><b><a href=
-        "#insertseparator">insertseparator</a></b></code> subcommands.</dd>
+        "#insertseparator">insertseparator</a></b></code> subcommands.&nbsp; If
+        <code><i>window</i></code> is not yet managed by the notebook then the
+        corresponding tab will be a ttk::radiobutton widget of a toolbutton
+        style (<code>Page.Toolbutton</code> or
+        <code>ClosablePage.Toolbutton</code>, depending on the value of the
+        <code><b><a href="#closabletabs">-closabletabs</a></b></code>
+        option).</dd>
 
         <dt class="tm" id="insertbutton"><code><i>pathName</i>
         <b>insertbutton</b> <i>pos</i> <i>pageIndex</i> <i>text</i>
         ?<i>image</i>?</code></dt>
 
         <dd>Inserts a new tab implemented as a ttk::button widget of a
-        toolbutton style that displays, besides the specified
-        <code><i>text</i></code> and optional <code><i>image</i></code>, the
-        <code><b>descend</b></code> element, at the specified position.&nbsp;
-        The details are quite similar to the ones regarding the
-        <code><b><a href="#addbutton">addbutton</a></b></code> subcommand.</dd>
+        toolbutton style (<code>Desc.Toolbutton</code>) that displays, besides
+        the specified <code><i>text</i></code> and optional
+        <code><i>image</i></code>, the <code><b>descend</b></code> element, at
+        the specified position.&nbsp; The details are quite similar to the ones
+        regarding the <code><b><a href="#addbutton">addbutton</a></b></code>
+        subcommand.</dd>
 
         <dt class="tm" id="insertlabel"><code><i>pathName</i>
         <b>insertlabel</b> <i>pos</i> <i>text</i> ?<i>image</i>?</code></dt>
 
-        <dd>Inserts a new tab implemented as a ttk::label widget that displays
-        the specified <code><i>text</i></code> and optional
-        <code><i>image</i></code>, at the specified position.&nbsp; The details
-        are quite similar to the ones regarding the <code><b><a href=
-        "#addlabel">addlabel</a></b></code> subcommand.</dd>
+        <dd>Inserts a new tab implemented as a ttk::label widget of the style
+        <code>PnbLabel.TLabel</code> that displays the specified
+        <code><i>text</i></code> and optional <code><i>image</i></code>, at the
+        specified position.&nbsp; The details are quite similar to the ones
+        regarding the <code><b><a href="#addlabel">addlabel</a></b></code>
+        subcommand.</dd>
 
         <dt class="tm" id="insertseparator"><code><i>pathName</i>
         <b>insertseparator</b> <i>pos</i></code></dt>
@@ -824,6 +852,12 @@ package require scrollutil_tile
         <dt class="tm" id="tabs"><code><i>pathName</i> <b>tabs</b></code></dt>
 
         <dd>See the <b>ttk_notebook</b> manual entry.</dd>
+
+        <dt class="tm" id="titlepath"><code><i>pathName</i>
+        <b>titlepath</b></code></dt>
+
+        <dd>Returns the path name of the plainnotebook's title label, which is
+        a ttk::label widget of the style <code>PnbTitle.TLabel</code>.</dd>
       </dl>
     </dd>
 
@@ -884,6 +918,25 @@ proc populateMenu {nb data} {
 
     <dd>
       <ol>
+        <li class="tm"><b>Navigation between the selectable tabs of a
+        plainnotebook widget via the mouse wheel:</b>&nbsp; Recall that the
+        selectable tabs are the ones created with the <code><b><a href=
+        "#add">add</a></b></code> and <code><b><a href=
+        "#insert">insert</a></b></code> subcommands.&nbsp; A mouse wheel
+        tick selects the selectable tab of state <code><b>normal</b></code>
+        cyclically following/preceding the currently selected one.&nbsp; (Note
+        that the same effect can also be achieved with the keys
+        <code>Down</code>, <code>Up</code>, <code>Control-Tab</code>, and
+        <code>Control-Shift-Tab</code>.)&nbsp; On the windowing system
+        <code><b>aqua</b></code>, if the <code>Option</code> key is down while
+        the mouse wheel is being rotated then a wheel tick selects the 10'th
+        selectable tab of state <code><b>normal</b></code> cyclically
+        following/preceding the currently selected one (modulo the number of
+        selectable tabs).&nbsp; The same holds true on the windowing systems
+        <code><b>x11</b></code> and <code><b>win32</b></code> if the Tk version
+        is 8.7a4 or later and the mouse wheel is rotated with the
+        <code>Alt</code> key down.</li>
+
         <li class="tm"><b>Moving the tabs of a plainnotebook widget with the
         mouse</b>:&nbsp; If mouse button 1 is pressed over a tab but outside
         the <code><b><a href="#closabletabs">closebtn</a></b></code> element
@@ -913,14 +966,15 @@ proc populateMenu {nb data} {
         and later released over the same element then, provided that the value
         of the tab's <code><b>-state</b></code> option is
         <code><b>normal</b></code>, the tab is closed by means of the widget's
-        <code><b>forget</b></code> subcommand.&nbsp; If this operation was not
-        aborted by the command specified as the value of the <code><b><a href=
-        "#forgetcommand">-forgetcommand</a></b></code> option and the Tk
-        version is 8.5a2 or later then, after closing the tab, the widget
-        generates a <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code>
-        virtual event, by invoking&nbsp; <code><b>event
-        generate</b></code>&nbsp; with the <code><b>-data</b></code> option set
-        to the path name of the widget contained in that tab's pane.</li>
+        <code><b>forget</b></code> subcommand.&nbsp; Recall that this operation
+        can get canceled by the command specified as the value of the
+        <code><b><a href="#forgetcommand">-forgetcommand</a></b></code> option;
+        if this was not the case and the Tk version is 8.5a2 or later then,
+        after closing the tab, the widget generates a
+        <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code> virtual event, by
+        invoking&nbsp; <code><b>event generate</b></code>&nbsp; with the
+        <code><b>-data</b></code> option set to the path name of the widget
+        contained in that tab's pane.</li>
       </ol>
     </dd>
 
