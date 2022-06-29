@@ -1,11 +1,11 @@
 [comment {-*- tcl -*- doctools manpage}]
-[manpage_begin Plotchart n 2.3.5]
-[copyright {2013 Arjen Markus <arjenmarkus@users.sourceforge.net>}]
+[manpage_begin Plotchart n 2.5.1]
+[copyright {2022 Arjen Markus <arjenmarkus@users.sourceforge.net>}]
 [moddesc   Plotchart]
 [titledesc {Simple plotting and charting package}]
 [require Tcl [opt 8.5]]
 [require Tk [opt 8.5]]
-[require Plotchart [opt 2.4.0]]
+[require Plotchart [opt 2.5.2]]
 
 [description]
 [para]
@@ -1190,6 +1190,10 @@ bottom-left or bottom-right. (Default value is top-right.)
 Set the vertical spacing between entries in the legend (in pixels).
 bottom-left or bottom-right. (Default value is 10 pixels.)
 
+[opt_def order string]
+Determine the ordering of the legend entries - "normal" means the order
+in which the entries are defined, "reverse" exactly the opposite. (Default: normal)
+
 [list_end]
 [para]
 
@@ -1455,7 +1459,8 @@ List of Y-coordinates for the region.
 Draw a filled strip representing a minimum and a maximum. The configuration of the series influences the polygon as follows:
 [term -fillcolour] is used to fill the polygon, [term -colour] is used for the boundary (set it to {} if
 no boundary is required and [term -width] determines the width of the boundary.
-[nl]
+
+[para]
 The arguments [term ymin] and [term ymax] may be empty to get an extra vertex in the strip. If both
 are empty, a new strip is started. For best results, the x-coordinate should be specified in ascending
 order.
@@ -3782,7 +3787,8 @@ Finally the [emph frame] component uses [emph color], [emph outerwidth]
 The target diagram and the Taylor diagram use the [emph limits] components
 in addition to the various general components. The limits component has
 one property: the color of the circles and circle segments.
-[nl]
+
+[para]
 For the Taylor diagram you can specify the color of the reference circles
 via the [emph reference] component.
 [list_end]
@@ -4017,7 +4023,136 @@ Standard deviation of the data point
 Correlation coefficient with the reference dataset
 [list_end]
 
+
+
+[call [cmd ::Plotchart::createHeatmap] [arg w] [arg rowlabels] [arg columnlabels] [arg args]]
+Create a heatmap, i.e. a tableau of rectangles whose colours depend on some data. The row and
+column labels are used as identifiers when filling in the data. The number of them determines the
+size of the tableau.
+[para]
+The data are passed by row, by column or per individual cell.
+
+[list_begin arguments]
+[arg_def widget w in]
+Name of the [emph existing] canvas widget to hold the heatmap.
+
+[arg_def list rowlabels in]
+List of labels to display at each row. The labels also serve as identifiers.
+
+[arg_def list columnlabels in]
+List of labels to display at each column. The labels also serve as identifiers.
+
+[arg_def list args in]
+Zero or more arguments to influence the size of the heatmap. See XY plot for more information.
 [list_end]
+
+[call [cmd \$heatmap] plot row [arg label] [arg data]]
+Use the given data to fill the rectangles belonging to the row "label".
+
+[list_begin arguments]
+[arg_def string label in]
+String indicating which row to use.
+[arg_def list data in]
+List of numerical data to be used for the colouring of the rectangles.
+[list_end]
+
+[call [cmd \$heatmap] plot column [arg label] [arg data]]
+Use the given data to fill the rectangles belonging to the column "label".
+
+[list_begin arguments]
+[arg_def string label in]
+String indicating which column to use.
+[arg_def list data in]
+List of numerical data to be used for the colouring of the rectangles.
+[list_end]
+
+[call [cmd \$heatmap] plot cell [arg rowlabel] [arg columnlabel] [arg value]]
+Use the given value to fill the rectangle belonging to the cell with the given row and column labels.
+
+[list_begin arguments]
+[arg_def string rowlabel in]
+String indicating which row to use.
+[arg_def string columnlabel in]
+String indicating which column to use.
+[arg_def float value in]
+Value to be used for the colouring of the cell.
+[list_end]
+
+[call [cmd \$heatmap] scale values [arg min] [arg max]]
+Set the range for the values - they are mapped to a colour via linear interpolation.
+
+[list_begin arguments]
+[arg_def float min in]
+Minimum value to be used.
+[arg_def float max in]
+Maximum value to be used.
+[list_end]
+
+[call [cmd \$heatmap] scale colours [arg mincolour] [arg maxcolour]]
+Set the colours to be used for the minimum and the maximum values. The actual
+colour is determined via linear interpolation of the RGB values.
+
+[list_begin arguments]
+[arg_def string mincolour in]
+Colour to be used at the minimum value.
+[arg_def string maxcolour in]
+Colour to be used at the maximum value.
+[list_end]
+
+
+[call [cmd ::Plotchart::createCircleplot] [arg w] [arg labels] [arg args]]
+Create a circle plot, i.e. a circle with labels that can be connected by coloured arcs.
+Typical use: present the relationship between the items on the circle in a graphical way.
+[para]
+The connections can be drawn pair by pair.
+
+[list_begin arguments]
+[arg_def widget w in]
+Name of the [emph existing] canvas widget to hold the circle plot.
+
+[arg_def list rowlabels in]
+List of labels to display along the circle. Each label is accompanied by a filled dot.
+
+[arg_def list args in]
+Zero or more arguments to influence the size of the circle plot. See XY plot for more information.
+[list_end]
+
+[call [cmd \$circleplot] connect [arg label1] [arg label2] [arg colour] [arg width]]
+Connect the two labels via a coloured arc of given width (the arc is actually a parabola).
+
+[list_begin arguments]
+[arg_def string label1 in]
+String indicating the first label to connect.
+[arg_def string label2 in]
+String indicating the second label to connect.
+[arg_def string colour in]
+Colour to use for the connected arc.
+[arg_def string width in]
+Width for the connected arc.
+[list_end]
+
+[call [cmd \$circleplot] modify [arg label] [arg args]]
+Modify the appearance of the label and the accompanying dot.
+
+[list_begin arguments]
+[arg_def string label in]
+String indicating which label to modify.
+[arg_def list args in]
+List of key-value pairs:
+[list_begin itemized]
+[item]
+[emph "-textcolour colour"] - colour of the text to be used (alternative: "-textcolor")
+[item]
+[emph "-font font"] - font for the text
+[item]
+[emph "-dotcolour colour"] - colour for the dot (alternative: "-dotcolor")
+[list_end]
+[list_end]
+
+[list_end]
+
+
+[section "ADDING SPECIFIC PLOT METHODS"]
 
 The command [term plotmethod] can be used to add new methods for a particular
 plot or chart type. It is intended to help you develop specialised graphical displays.

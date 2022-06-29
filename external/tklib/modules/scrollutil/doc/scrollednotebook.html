@@ -16,7 +16,7 @@
     <h1>The <code><b>scrollutil::scrollednotebook</b></code> Command<br>
     and the <code><b>closetab</b></code> Style Element</h1>
 
-    <h2>For Scrollutil Version 1.13</h2>
+    <h2>For Scrollutil Version 1.15</h2>
 
     <h3>by</h3>
 
@@ -177,17 +177,23 @@ package require scrollutil_tile
     must exist.</dd>
 
     <dd class="tm">A scrollednotebook is a mega-widget that contains a
-    ttk::notebook within a <a href=
-    "scrollableframe.html">scrollableframe</a> and supports an arbitrary number
-    of unsqueezed tabs.&nbsp; Currently not visible tabs can be brought into
-    view by navigating and scrolling with the mouse wheel or keyboard.&nbsp; An
+    ttk::notebook within a <a href="scrollableframe.html">scrollableframe</a>
+    and supports an arbitrary number of unsqueezed tabs.&nbsp; Currently not
+    visible tabs can be brought into view by navigating with the mouse wheel or
+    keyboard and by scrolling with the aid of the two arrow buttons placed on
+    demand in the top-left and top-right or bottom-left and bottom-right
+    corners (depending on the notebook's <a href=
+    "#std_options">style</a>).&nbsp; The size of the arrows depends on the
+    display's scaling percentage (<code>100</code>, <code>125</code>,
+    <code>150</code>, <code>175</code>, or <code>200</code>), while their color
+    is theme-specific and is updated whenever the theme changes.&nbsp; An
     individual tab can be made visible programmatically with the aid of the
-    <code><b><a href="#see">see</a></b></code> subcommand.&nbsp; It is made
-    sure that the currently selected tab is always visible.&nbsp; Unlike the
+    <code><b><a href="#see">see</a></b></code> subcommand.&nbsp; Unlike the
     ttk::notebook widget, whose <code><b>-width</b></code> option is quite
-    often overriden by the total width of the tabs, the scrollednotebook widget
-    respects the value of its <code><b><a href="#width">-width</a></b></code>
-    option, regardless of the space required by the tabs.</dd>
+    often overridden by the total width of the tabs, the scrollednotebook
+    widget respects the value of its <code><b><a href=
+    "#width">-width</a></b></code> option, regardless of the space required by
+    the tabs.</dd>
 
     <dd class="tm">The API of the scrollednotebook widget is nearly identical
     to that of ttk::notebook.&nbsp; Apart from the scrollednotebook-specific
@@ -313,9 +319,9 @@ package require scrollutil_tile
         currently selected window by selecting a different one.&nbsp; If the
         option's value is a nonempty string then it is concatenated with the
         path name of the scrollednotebook widget and that of the currently
-	selected window, and the resulting script, which must return a boolean,
-	is evaluated in the global scope.&nbsp; If the return value of this
-	script is false then the operation of selecting a different window is
+        selected window, and the resulting script, which must return a boolean,
+        is evaluated in the global scope.&nbsp; If the return value of this
+        script is false then the operation of selecting a different window is
         aborted.&nbsp; The default is an empty string.</p>
       </blockquote>
     </dd>
@@ -485,9 +491,7 @@ package require scrollutil_tile
         <dd>This subcommand adjusts the view in the scrollednotebook's window
         so that the tab given by <code><i>tabId</i></code> becomes visible in
         it.&nbsp; Note that when a tab gets selected, this command is
-        automatically invoked for it, in order to make that tab visible.&nbsp;
-        In addition, the currently selected tab is always kept visible, by
-        invoking this command whenever necessary.</dd>
+        automatically invoked for it, in order to make that tab visible.</dd>
       </dl>
     </dd>
 
@@ -539,8 +543,9 @@ proc populateMenu {nb data} {
     </dd>
 
     <dd>See the next section for the description of the virtual events
-    <code><b>&lt;&lt;NotebookTabMoved&gt;&gt;</b></code> and
-    <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code>.</dd>
+    <code><b>&lt;&lt;NotebookTabMoved&gt;&gt;</b></code>,
+    <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code>, and
+    <code><b>&lt;&lt;CloseTabRequested&gt;&gt;</b></code>.</dd>
 
     <dt class="tm" id="bindings"><b>FURTHER BINDINGS</b></dt>
 
@@ -551,18 +556,31 @@ proc populateMenu {nb data} {
       <ol>
         <li class="tm"><b>Navigation between the tabs of a ttk::notebook or
         scrollednotebook widget via the mouse wheel:</b>&nbsp; A mouse wheel
-        tick selects the tab cyclically following/preceding the currently
-        selected one.&nbsp; (Note that the same effect can also be achieved
-        with the keys <code>Right</code>, <code>Left</code>,
-        <code>Control-Tab</code>, and <code>Control-Shift-Tab</code>.)&nbsp; On
-        the windowing system <code><b>aqua</b></code>, if the
-        <code>Option</code> key is down while the mouse wheel is being rotated
-        then a wheel tick selects the tab whose numerical index is 10
-        greater/less than that of the currently selected one (modulo the number
-        of tabs).&nbsp; The same holds true on the windowing systems
-        <code><b>x11</b></code> and <code><b>win32</b></code> if the Tk version
-        is 8.7a4 or later and the mouse wheel is rotated with the
-        <code>Alt</code> key down.</li>
+        tick selects the tab of state <code><b>normal</b></code> cyclically
+        following/preceding the currently selected one.&nbsp; (Note that the
+        same effect can also be achieved with the keys <code>Right</code>,
+        <code>Left</code>, <code>Control-Tab</code>, and
+        <code>Control-Shift-Tab</code>.)&nbsp; On the windowing system
+        <code><b>aqua</b></code>, if the <code>Option</code> key is down while
+        the mouse wheel is being rotated then a wheel tick selects the 10'th
+        tab of state <code><b>normal</b></code> cyclically following/preceding
+        the currently selected one (modulo the number of tabs).&nbsp; The same
+        holds true on the windowing systems <code><b>x11</b></code> and
+        <code><b>win32</b></code> if the Tk version is 8.7a4 or later and the
+        mouse wheel is rotated with the <code>Alt</code> key down.</li>
+
+        <li class="tm"><b>Scrolling the tab row of a scrollednotebook widget
+        with the aid of the arrow buttons:</b>&nbsp; If the tab at the right
+        edge of the scrollednotebook is only partly visible then pressing mouse
+        button 1 over the right arrow adjusts the view in the tab row so that
+        the tab becomes fully visible; otherwise the click brings the next
+        nonhidden tab into view.&nbsp; Similarly, if the tab at the left edge
+        of the scrollednotebook is only partly visible then pressing mouse
+        button 1 over the left arrow adjusts the view in the tab row so that
+        the tab becomes fully visible; otherwise the click brings the previous
+        nonhidden tab into view.&nbsp; If the mouse button is held down for at
+        least 300 milliseconds, the actions described above will auto-repeat
+        every 100 milliseconds.</li>
 
         <li class="tm"><b>Moving the tabs of a ttk::notebook or
         scrollednotebook widget with the mouse</b>:&nbsp; If mouse button 1 is
@@ -591,21 +609,72 @@ proc populateMenu {nb data} {
         for the duration of the drag, the cursor is set to one having the shape
         of an up/down arrow.</li>
 
-        <li class="tm"><b>Closing a tab of a ttk::notebook or scrollednotebook
-        widget with the aid of the <code>closetab</code> element</b>:&nbsp; If
-        mouse button 1 is pressed over the <code><b>closetab</b></code> element
-        (if any) of a tab and later released over the same element then,
-        provided that both the value of the tab's <code><b>-state</b></code>
-        option and the state of its <code><b>closetab</b></code> element is
+        <li class="tm"><b>Closing a tab of a scrollednotebook widget with the
+        aid of the <code>closetab</code> element</b>:&nbsp; If mouse button 1
+        is pressed over the <code><b>closetab</b></code> element (if any) of a
+        tab and later released over the same element then, provided that both
+        the value of the tab's <code><b>-state</b></code> option and the state
+        of its <code><b>closetab</b></code> element is
         <code><b>normal</b></code>, the tab is closed by means of the widget's
-        <code><b>forget</b></code> subcommand.&nbsp; If this operation was not
-        aborted by the command specified as the value of the <code><b><a href=
-        "#forgetcommand">-forgetcommand</a></b></code> option and the Tk
-        version is 8.5a2 or later then, after closing the tab, the widget
-        generates a <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code>
-        virtual event, by invoking&nbsp; <code><b>event
-        generate</b></code>&nbsp; with the <code><b>-data</b></code> option set
-        to the path name of the widget contained in that tab's pane.</li>
+        <code><b>forget</b></code> subcommand.&nbsp; Recall that this operation
+        can get canceled by the command specified as the value of the
+        <code><b><a href="#forgetcommand">-forgetcommand</a></b></code> option;
+        if this was not the case and the Tk version is 8.5a2 or later then,
+        after closing the tab, the widget generates a
+        <code><b>&lt;&lt;NotebookTabClosed&gt;&gt;</b></code> virtual event, by
+        invoking&nbsp; <code><b>event generate</b></code>&nbsp; with the
+        <code><b>-data</b></code> option set to the path name of the widget
+        contained in that tab's pane.</li>
+
+        <li class="tm">
+          <b>Closing a tab of a ttk::notebook widget with the aid of the
+          <code>closetab</code> element</b>:&nbsp; If mouse button 1 is pressed
+          over the <code><b>closetab</b></code> element (if any) of a tab and
+          later released over the same element then, provided that both the
+          value of the tab's <code><b>-state</b></code> option and the state of
+          its <code><b>closetab</b></code> element is
+          <code><b>normal</b></code>, an action depending on the Tk version is
+          taken:
+
+          <ul>
+            <li class="tm">
+              If the Tk version is 8.5a2 or later then the tab is not (yet)
+              closed.&nbsp; Instead, the widget generates a
+              <code><b>&lt;&lt;CloseTabRequested&gt;&gt;</b></code> virtual
+              event, by invoking&nbsp; <code><b>event generate</b></code>&nbsp;
+              with the <code><b>-data</b></code> option set to the numerical
+              index of the tab in question.&nbsp; It is the responsibility of
+              the application to create a binding for this virtual event and to
+              close the tab from within the binding script by invoking the
+              widget's <code><b>forget</b></code> subcommand if appropriate,
+              like in the following example:
+
+              <blockquote>
+                <pre>
+bind $nb <span class="red">&lt;&lt;CloseTabRequested&gt;&gt;</span> { closeTab %W %d }
+
+proc closeTab {nb tabIdx} {
+    set btn [tk_messageBox -title "Close Tab?" -icon question \
+             -message "Do you really want to close the tab?" -type yesno
+    if {$btn eq "yes"} {
+        <span class="red">$nb forget $tabIdx</span>
+
+        <span class="cmt"># Optionally:</span>
+        set widget [lindex [$nb tabs] $tabIdx]
+        event generate $nb <span class="red">&lt;&lt;NotebookTabClosed&gt;&gt;</span> -data $widget
+    }
+}
+</pre>
+              </blockquote>
+            </li>
+
+            <li class="tm">If the Tk version is earlier than 8.5a2 then the tab
+            is closed immediately by means of the widget's
+            <code><b>forget</b></code> subcommand.&nbsp; (Recall that the
+            <code><b>-data</b></code> option for virtual events was introduced
+            in Tk 8.5a2.)</li>
+          </ul>
+        </li>
       </ol>
     </dd>
 
@@ -771,7 +840,7 @@ package require scrollutil_tile
 
     <dd>Sets or queries the state of the <code><b><a href=
     "#closetab">closetab</a></b></code> element of the tab specified by
-    <code><i>tabId</i></code> of the ttk::notebook or scrollednotebook widget 
+    <code><i>tabId</i></code> of the ttk::notebook or scrollednotebook widget
     <code><i>notebook</i></code>.&nbsp; The optional argument specifies the
     state as <code><b>normal</b></code> or <code><b>disabled</b></code>.&nbsp;
     Without this argument the command returns the current state of the tab's

@@ -24,12 +24,13 @@ image create photo fileImg -file [file join $dir file$pct.gif]
 #
 set f  [ttk::frame .f]
 set nb [ttk::notebook $f.nb -style My.TNotebook]
-set panePadding [expr {$ttk::currentTheme eq "aqua" ? 0 : "7p"}]
+set currentTheme [styleutil::getCurrentTheme]
+set panePadding [expr {$currentTheme eq "aqua" ? 0 : "7p"}]
 cd [expr {[info exists ttk::library] ? $ttk::library : $tile::library}]
 foreach fileName [lsort [glob *.tcl]] {
     set baseName [string range $fileName 0 end-4]
     set sa [scrollutil::scrollarea $nb.sa_$baseName -lockinterval 10]
-    if {$ttk::currentTheme eq "vista"} {
+    if {$currentTheme eq "vista"} {
 	$sa configure -relief solid
     }
     set txt [text $sa.txt -font TkFixedFont -takefocus 1 -wrap none]
@@ -51,6 +52,7 @@ foreach fileName [lsort [glob *.tcl]] {
 # Create a binding for moving and closing the tabs interactively
 #
 bind $nb <<MenuItemsRequested>> { populateMenu %W %d }
+bind $nb <<CloseTabRequested>>  { closeTab %W %d }
 
 proc populateMenu {nb data} {
     foreach {menu tabIdx} $data {}
@@ -65,7 +67,25 @@ proc populateMenu {nb data} {
 	[list $nb insert $nextIdx $widget]
     $menu add separator
     $menu add command -label "Close Tab" -command \
-	[list $nb forget $tabIdx]
+	[list closeTab $nb $tabIdx]
+}
+
+proc closeTab {nb tabIdx} {
+    set widget [lindex [$nb tabs] $tabIdx]
+    set txt $widget.txt
+    if {[$txt tag nextrange sel 1.0 end] eq ""} {
+	$nb forget $tabIdx
+	return ""
+    }
+
+    set btn [tk_messageBox -title "Copy Selection?" -icon question \
+	     -message "Do you want to copy the selection to the clipboard?" \
+	     -type yesnocancel]
+    switch $btn {
+	yes	{ tk_textCopy $txt; $nb forget $tabIdx }
+	no	{ $nb forget $tabIdx }
+	cancel	{}
+    }
 }
 
 #
@@ -85,7 +105,7 @@ after 50 [list configNb $nb $sa]
 
 proc configNb {nb sa} {
     set width [expr {[winfo reqwidth $sa] + [winfo reqwidth $sa.vsb]}]
-    incr width [expr {$ttk::currentTheme eq "aqua" ?
+    incr width [expr {$::currentTheme eq "aqua" ?
 		      0 : 2*[winfo pixels . 7p] + 4}]
     $nb configure -width $width
 }

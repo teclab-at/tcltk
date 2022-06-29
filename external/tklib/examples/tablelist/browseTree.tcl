@@ -6,7 +6,7 @@
 #==============================================================================
 
 package require Tk 8.3
-package require tablelist 6.17
+package require tablelist 6.19
 
 namespace eval demo {
     variable dir [file dirname [info script]]
@@ -424,7 +424,7 @@ proc demo::refreshView {w tbl} {
 
 #------------------------------------------------------------------------------
 # demo::restoreExpandedStates
-#   
+#
 # Expands those children of the parent identified by nodeIdx that display the
 # data of child widgets whose path names are the names of the elements of the
 # array specified by the last argument.

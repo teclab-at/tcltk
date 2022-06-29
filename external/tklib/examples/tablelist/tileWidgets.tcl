@@ -7,7 +7,7 @@
 # Copyright (c) 2005-2022  Csaba Nemethi (E-mail: csaba.nemethi@t-online.de)
 #==============================================================================
 
-package require tablelist_tile 6.17
+package require tablelist_tile 6.19
 
 wm title . "Serial Line Configuration"
 
@@ -232,7 +232,7 @@ proc editEndCmd {tbl row col text} {
 
 	actDate {
 	    #
-	    # Get the activation date in seconds from the last argument 
+	    # Get the activation date in seconds from the last argument
 	    #
 	    if {[catch {clock scan $text} actDate] != 0} {
 		bell
@@ -261,7 +261,7 @@ proc editEndCmd {tbl row col text} {
 
 	actTime {
 	    #
-	    # Get the activation clock value in seconds from the last argument 
+	    # Get the activation clock value in seconds from the last argument
 	    #
 	    set actDate [$tbl cellcget $row,actDate -text]
 	    if {[catch {clock scan $text -base $actDate} actClock] != 0} {

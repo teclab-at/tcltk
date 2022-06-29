@@ -8,7 +8,7 @@
 #   nmake /f makefile.vc INSTALLDIR=c:\tcl install
 #
 # For other build options (debug, static etc.),
-# See TIP 477 (https://core.tcl.tk/tips/doc/main/tip/477.md) for
+# See TIP 477 (https://core.tcl-lang.org/tips/doc/main/tip/477.md) for
 # detailed documentation.
 #
 # In addition to the command line macros described there the following
@@ -29,6 +29,7 @@ DOCDIR          = $(ROOT)\doc\html
 
 PRJ_DEFINES = -D _CRT_SECURE_NO_DEPRECATE -D _CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS
 PRJ_DEFINES = $(PRJ_DEFINES) -DTCL_TIP143 -DTCL_TIP285 -DTCL_NO_DEPRECATED=1 $(ADDOPTDEFINES)
+PRJ_DEFINES = $(PRJ_DEFINES) -I$(TMP_DIR)
 PRJ_LIBS = $(ADDLINKOPTS)
 
 !include "rules-ext.vc"

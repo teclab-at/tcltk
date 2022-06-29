@@ -3492,9 +3492,24 @@ EXTERN void		Tcl_AppendPrintfToObj(Tcl_Obj *objPtr,
 /* Slot 657 is reserved */
 /* Slot 658 is reserved */
 /* Slot 659 is reserved */
+/* Slot 660 is reserved */
+/* Slot 661 is reserved */
+/* Slot 662 is reserved */
+/* Slot 663 is reserved */
+/* Slot 664 is reserved */
+/* Slot 665 is reserved */
+/* Slot 666 is reserved */
+/* Slot 667 is reserved */
+/* Slot 668 is reserved */
+/* Slot 669 is reserved */
+/* Slot 670 is reserved */
+/* Slot 671 is reserved */
+/* Slot 672 is reserved */
+/* Slot 673 is reserved */
+/* Slot 674 is reserved */
 #ifndef TclUnusedStubEntry_TCL_DECLARED
 #define TclUnusedStubEntry_TCL_DECLARED
-/* 660 */
+/* 675 */
 EXTERN void		TclUnusedStubEntry(void);
 #endif
 
@@ -4192,7 +4207,22 @@ typedef struct TclStubs {
     VOID *reserved657;
     VOID *reserved658;
     VOID *reserved659;
-    void (*tclUnusedStubEntry) (void); /* 660 */
+    VOID *reserved660;
+    VOID *reserved661;
+    VOID *reserved662;
+    VOID *reserved663;
+    VOID *reserved664;
+    VOID *reserved665;
+    VOID *reserved666;
+    VOID *reserved667;
+    VOID *reserved668;
+    VOID *reserved669;
+    VOID *reserved670;
+    VOID *reserved671;
+    VOID *reserved672;
+    VOID *reserved673;
+    VOID *reserved674;
+    void (*tclUnusedStubEntry) (void); /* 675 */
 } TclStubs;
 
 extern TclStubs *tclStubsPtr;
@@ -6625,9 +6655,24 @@ extern TclStubs *tclStubsPtr;
 /* Slot 657 is reserved */
 /* Slot 658 is reserved */
 /* Slot 659 is reserved */
+/* Slot 660 is reserved */
+/* Slot 661 is reserved */
+/* Slot 662 is reserved */
+/* Slot 663 is reserved */
+/* Slot 664 is reserved */
+/* Slot 665 is reserved */
+/* Slot 666 is reserved */
+/* Slot 667 is reserved */
+/* Slot 668 is reserved */
+/* Slot 669 is reserved */
+/* Slot 670 is reserved */
+/* Slot 671 is reserved */
+/* Slot 672 is reserved */
+/* Slot 673 is reserved */
+/* Slot 674 is reserved */
 #ifndef TclUnusedStubEntry
 #define TclUnusedStubEntry \
-	(tclStubsPtr->tclUnusedStubEntry) /* 660 */
+	(tclStubsPtr->tclUnusedStubEntry) /* 675 */
 #endif
 
 #endif /* defined(USE_TCL_STUBS) && !defined(USE_TCL_STUB_PROCS) */

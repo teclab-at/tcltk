@@ -1,6 +1,6 @@
 Package: tcltk85
 Version: %deb_version%
-Release: 26
+Release: 27
 Pre-Depends: chrpath, awk, sed, libpq5
 Depends: libfftw3-3
 Maintainer: (c) 2022 ATOS, Thomas Perschak
